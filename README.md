@@ -6,3 +6,4 @@ Our project will be a backend API for a library system. This will involve keepin
 Anthony Tung-Nachtrab atungnac@calpoly.edu  
 Jeanne Labuga jlabuga@calpoly.edu  
 Iris Aeron iaeron@calpoly.edu
+Joel Emigdio jemigdio@calpoly.edu
