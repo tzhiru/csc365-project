@@ -8,5 +8,7 @@ Parameters of project
   
 Start a new github repository (just one for your entire team) and create a markdown file that has:
 - Your contributors. This can be 3-4 total people, all of whom must be in your same section. Please include your calpoly email addresses.
-- Description of your project. This should be 4-8 sentence pitch, not a detailed spec. Don't worry the spec will be next.
+- Description of your project. This should be 4-8 sentence pitch, not a detailed spec. Don't worry the spec will be next.  
+## Contributors  
+Anthony Tung-Nachtrab atungnac@calpoly.edu
 
