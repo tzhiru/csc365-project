@@ -1,0 +1,26 @@
+# API Specification
+## 1. Creating a new account
+### `/accounts/new` (POST)
+Creates an account for a new patron.  
+  
+**Request:**
+```json
+[
+  {
+    "first_name": "string",
+    "last_name": "string",
+    "address": "string",
+    "phone_number": "string"
+  }
+]
+```
+**Response:**
+```json
+[
+  {
+    "account_id": "string"
+  }
+]
+```
+## 2. Checking out books
+## 3. Editing the library catalog (admin functions)
