@@ -1,9 +1,9 @@
-# API Specification
-## 1. Creating a new account
-### `/accounts/new` (POST)
+# API Specification  
+## 1. Creating a new account  
+### `/accounts/new` (POST)  
 Creates an account for a new patron.  
   
-**Request:**
+**Request:**  
 ```json
 [
   {
@@ -14,7 +14,7 @@ Creates an account for a new patron.
   }
 ]
 ```
-**Response:**
+**Response:**  
 ```json
 [
   {
@@ -22,5 +22,8 @@ Creates an account for a new patron.
   }
 ]
 ```
-## 2. Checking out books
-## 3. Editing the library catalog (admin functions)
+## 2. Checking out books  
+1. View catalog of avaliable books  
+2. Checkout book (add to user's account's list of checked out books)  
+## 3. Returning books  
+## 4. Editing the library catalog (admin functions)  
