@@ -27,3 +27,5 @@ Creates an account for a new patron.
 2. Checkout book (add to user's account's list of checked out books)  
 ## 3. Returning books  
 ## 4. Editing the library catalog (admin functions)  
+## 5. Viewing user account information/checked out books (admin functions)  
+## 6. Viewing and leaving reviews on books
