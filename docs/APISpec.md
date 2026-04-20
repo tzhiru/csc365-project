@@ -117,6 +117,7 @@ Removes a book from the library catalog.
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
 ### 1. `/admin/accounts/` (GET)
 Displays a list of all library patron accounts.
+
 **Response**:  
 
 ```json
@@ -132,7 +133,8 @@ Displays a list of all library patron accounts.
 ```
 ### 2. `/admin/accounts/{account_id}/` (GET)
 Displays detailed information for a specific patron account.
- **Response**:
+ 
+**Response**:
  
  ```json
  {
@@ -144,7 +146,8 @@ Displays detailed information for a specific patron account.
  }
 ```
 ### 3. `/admin/accounts/{account_id}/checkedout/` (GET)
- **Response**:
+ 
+**Response**:
  
  ```json
 [
