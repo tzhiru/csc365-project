@@ -1,7 +1,7 @@
 # API Specification  
 ## 1. Creating a new account  
 ### `/accounts/new` (POST)  
-Creates an account for a new patron.  
+Creates an account for a new patron and returns the account id to be used for checking out books.  
   
 **Request:**  
 ```json
@@ -23,8 +23,44 @@ Creates an account for a new patron.
 ]
 ```
 ## 2. Checking out books  
-1. View catalog of avaliable books  
-2. Checkout book (add to user's account's list of checked out books)  
+1. View catalog of avaliable books
+2. Search catalog for specific items
+3. Checkout book (add to user's account's list of checked out books)
+### 1. `/catalog/avaliable/` (GET)
+Displays all books avaliable for checkout.  
+  
+**Response:**  
+```json
+[
+  {
+    "book_id": "number",
+    "name": "string",
+    "author": "string",
+    "description": "string",
+    "quantity_avaliable": "number",
+  }
+]
+```
+### 2. `/catalog/search/` (GET)
+Searches the library catalog via specific parameters.  
+### 3. `/catalog/checkout/{book_id}/` (POST)  
+Checks out the specified copy of a book under the user's account.  
+  
+**Request**:  
+
+```json
+{
+  "account_id": "string"
+}
+```
+
+**Response**:  
+
+```json
+{
+    "success": "boolean"
+}
+```
 ## 3. Returning books  
 ## 4. Editing the library catalog (admin functions)  
 ## 5. Viewing user account information/checked out books (admin functions)  
