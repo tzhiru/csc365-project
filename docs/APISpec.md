@@ -162,3 +162,41 @@ Displays detailed information for a specific patron account.
 
 ```
 ## 6. Viewing and leaving reviews on books
+Allows patrons to view ratings and reviews left by other users, and submit their own ratings for books they have previously checked out.
+
+### 1. `/catalog/{book_id}/reviews/` (GET)
+Retrieves all ratings and written reviews for a specific book.
+
+**Response:**
+
+ ```json
+[
+  {
+    "review_id": "string",
+    "account_id": "string",
+    "rating": "number", 
+    "review_text": "string",
+    "date_posted": "string"
+  }
+]
+```
+### 2. `/catalog/{book_id}/reviews/` (POST)
+Allows a patron to leave a 1-5 star rating and an optional text review for a book they have borrowed. The API will check to ensure the user has actually checked out this book before and hasn't already reviewed it.
+
+**Request:**
+
+ ```json
+{
+  "account_id": "string",
+  "rating": "number",
+  "review_text": "string"
+}
+```
+**Response:**
+
+ ```json
+{
+  "success": "boolean",
+  "review_id": "string",
+  "message": "string"
+}
