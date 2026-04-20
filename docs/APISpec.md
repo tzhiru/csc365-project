@@ -113,5 +113,49 @@ Removes a book from the library catalog.
 }
 ```
 
-## 5. Viewing user account information/checked out books (admin functions)  
+## 5. Viewing user account information/checked out books (admin functions) 
+Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
+### 1. `/admin/accounts/` (GET)
+Displays a list of all library patron accounts.
+**Response**:  
+
+```json
+[
+ {
+    "account_id" : "string",
+    "first_name" : "string",
+    "last_name" : "string",
+    "address" : "string",
+    "phone_number": "string"
+ }
+]
+```
+### 2. `/admin/accounts/{account_id}/` (GET)
+Displays detailed information for a specific patron account.
+ **Response**:
+ 
+ ```json
+ {
+    "account_id" : "string",
+    "first_name" : "string",
+    "last_name" : "string",
+    "address" : "string",
+    "phone_number": "string"
+ }
+```
+### 3. `/admin/accounts/{account_id}/checkedout/` (GET)
+ **Response**:
+ 
+ ```json
+[
+ {
+    "book_id" : "number",
+    "name" : "string",
+    "author" : "string",
+    "checkout_date" : "string",
+    "due_date": "string"
+ }
+]
+
+```
 ## 6. Viewing and leaving reviews on books
