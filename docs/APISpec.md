@@ -62,6 +62,56 @@ Checks out the specified copy of a book under the user's account.
 }
 ```
 ## 3. Returning books  
+Marks a checked out item as returned.
+### 1. `/catalog/return/{book_id}/` (POST) 
+Returns the specified book and removes it from the user's list of checked out books
+
+### 2. `/accounts/{account_id}/checkedout` (GET) 
+Displays all books currently checked out under a specific account
+
+**Response:**  
+```json
+[
+  {
+    "book_id": "number",
+    "name": "string",
+    "author": "string",
+    "due_date": "string",
+  }
+]
+```
 ## 4. Editing the library catalog (admin functions)  
+### 1. /catalog/add/ (POST)
+Adds a new item to the library catalog.
+
+**Request**:
+```json
+  {
+    "name": "number",
+    "author": "string",
+    "description": "string",
+    "quantity_available": "number",
+  }
+```
+**Response**:  
+
+```json
+{
+    "book_id" : "number"
+    "success": "boolean"
+}
+```
+
+### 2. /catalog/remove/{book_id}/ (DELETE)
+Removes a book from the library catalog.
+
+**Response**:  
+
+```json
+{
+    "success": "boolean"
+}
+```
+
 ## 5. Viewing user account information/checked out books (admin functions)  
 ## 6. Viewing and leaving reviews on books
