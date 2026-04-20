@@ -66,7 +66,7 @@ Marks a checked out item as returned.
 ### 1. `/catalog/return/{book_id}/` (POST) 
 Returns the specified book and removes it from the user's list of checked out books
 
-### 2. `/accounts/{account_id}/checkedout` (GET) 
+### 2. `/accounts/{account_id}/checkedout/` (GET) 
 Displays all books currently checked out under a specific account
 
 **Response:**  
@@ -81,7 +81,7 @@ Displays all books currently checked out under a specific account
 ]
 ```
 ## 4. Editing the library catalog (admin functions)  
-### 1. /catalog/add/ (POST)
+### 1. `/catalog/add/` (POST)
 Adds a new item to the library catalog.
 
 **Request**:
@@ -102,7 +102,7 @@ Adds a new item to the library catalog.
 }
 ```
 
-### 2. /catalog/remove/{book_id}/ (DELETE)
+### 2. `/catalog/remove/{book_id}/` (DELETE)
 Removes a book from the library catalog.
 
 **Response**:  
