@@ -1,6 +1,6 @@
 # API Specification  
 ## 1. Creating a new account  
-### `/accounts/new` (POST)  
+### 1. `/accounts/new` (POST)  
 Creates an account for a new patron and returns the account id to be used for checking out books.  
   
 **Request:**  
@@ -37,12 +37,39 @@ Displays all books avaliable for checkout.
     "name": "string",
     "author": "string",
     "description": "string",
+    "category": "string",
+    "average_rating": "float", //between 0 and 10
     "quantity_avaliable": "number",
   }
 ]
 ```
 ### 2. `/catalog/search/` (GET)
-Searches the library catalog via specific parameters.  
+Searches the library catalog via specific parameters. Returns a list of all matching search results.  
+**Request:**  
+```json
+[
+  {
+    "book_id": "number", //optional
+    "name": "string", //optional
+    "author": "string", //optional
+    "category": "string", //optional
+    "average_rating": "float", //optional, between 0 and 10
+  }
+]
+```
+**Response:**  
+```json
+[
+  {
+    "book_id": "number",
+    "name": "string",
+    "author": "string",
+    "description": "string",
+    "category": "string",
+    "quantity_avaliable": "number",
+  }
+]
+```
 ### 3. `/catalog/checkout/{book_id}/` (POST)  
 Checks out the specified copy of a book under the user's account.  
   
@@ -90,6 +117,7 @@ Adds a new item to the library catalog.
     "name": "number",
     "author": "string",
     "description": "string",
+    "category": "string",
     "quantity_available": "number",
   }
 ```
