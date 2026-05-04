@@ -29,6 +29,7 @@ def create_catalog() -> List[CatalogItem]:
             potion_type=[100, 0, 0, 0],
         )
     ]
+    print("Test Update")
 
 
 @router.get("/catalog/", tags=["catalog"], response_model=List[CatalogItem])
