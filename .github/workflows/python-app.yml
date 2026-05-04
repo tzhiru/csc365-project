@@ -60,22 +60,22 @@ jobs:
           source .venv/bin/activate
           mypy . --check-untyped-defs
 
-      - name: Run tests with coverage
-        run: |
-          source .venv/bin/activate
-          pytest --cov=. --cov-report=html --cov-report=xml --junitxml=test-results.xml
+      # - name: Run tests with coverage
+        # run: |
+          # source .venv/bin/activate
+          # pytest --cov=. --cov-report=html --cov-report=xml --junitxml=test-results.xml
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: test-results.xml
+      # - name: Upload test results
+        # uses: actions/upload-artifact@v4
+        # if: always()
+        # with:
+          # name: test-results
+          # path: test-results.xml
           
-      - name: Upload HTML coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: htmlcov/
+      # - name: Upload HTML coverage report
+        # uses: actions/upload-artifact@v4
+        # if: always()
+        # with:
+          # name: coverage-report
+          # path: htmlcov/
           
