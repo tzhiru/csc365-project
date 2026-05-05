@@ -50,7 +50,11 @@ def get_catalog() -> List[CatalogItem]:
     return newCatalog
 
 
-@router.post("/catalog/remove/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/catalog/remove/{book_id}",
+    tags=["catalog"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 def remove_book(book_id: int):
     print(f"removing book. id: {book_id}")
     with db.engine.begin() as connection:
