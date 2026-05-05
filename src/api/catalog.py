@@ -1,6 +1,8 @@
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
-from typing import List, Annotated
+from pydantic import BaseModel
+from typing import List
+import sqlalchemy
+from src import database as db
 
 router = APIRouter()
 
@@ -11,6 +13,7 @@ class CatalogItem(BaseModel):
     author_last: str
     date_published: str
 
+
 @router.get("/catalog/", tags=["catalog"], response_model=List[CatalogItem])
 def get_catalog() -> List[CatalogItem]:
     """
@@ -20,7 +23,7 @@ def get_catalog() -> List[CatalogItem]:
     newCatalog: List[CatalogItem] = []
 
     with db.engine.begin() as connection:
-        bk = connection.execute(
+        books = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT books.title, authors.first_name as f, authors.last_name as l,
@@ -31,16 +34,16 @@ def get_catalog() -> List[CatalogItem]:
                 """
             )
         )
-        
+
         # later actually have it based on what copies of books are actually in store, display how many copies avaliable.
-        
-        for bk in res:
+
+        for bk in books:
             newCatalog.append(
                 CatalogItem(
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
-                    date_published=bk.date_published
+                    date_published=bk.date_published,
                 )
             )
 
