@@ -8,6 +8,7 @@ router = APIRouter()
 
 
 class CatalogItem(BaseModel):
+    book_id: int
     title: str
     author_first: str
     author_last: str
@@ -26,7 +27,7 @@ def get_catalog() -> List[CatalogItem]:
         books = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT books.title, authors.first_name as f, authors.last_name as l,
+                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
                 date_published
                 FROM books
                 JOIN authors on books.author_id = authors.id
@@ -40,6 +41,7 @@ def get_catalog() -> List[CatalogItem]:
         for bk in books:
             newCatalog.append(
                 CatalogItem(
+                    book_id=bk.id,
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
