@@ -50,17 +50,17 @@ def get_catalog() -> List[CatalogItem]:
     return newCatalog
 
 
-def create_catalog() -> List[CatalogItem]:
-    with db.engine.begin() as connection:
-        catalog = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT * FROM books
-                """
-            )
-        ).fetchall()
+# def create_catalog() -> List[CatalogItem]:
+# with db.engine.begin() as connection:
+# catalog = connection.execute(
+# sqlalchemy.text(
+# """
+# SELECT * FROM books
+# """
+# )
+# ).fetchall()
 
-    return catalog
+# return catalog
 
 
 # @router.post("/catalog/remove/{book_id}", status_code=status.HTTP_204_NO_CONTENT)  #fix response
