@@ -7,6 +7,7 @@ Central Coast Cauldrons is the premier ecommerce site for all your alchemical de
 """
 tags_metadata = [
     {"name": "cart", "description": "Place potion orders."},
+    {"name": "accounts", "description": "Manage patron accounts."},
     {"name": "catalog", "description": "View the available potions."},
     {"name": "bottler", "description": "Bottle potions from the raw magical elixir."},
     {
@@ -44,6 +45,7 @@ app.add_middleware(
 )
 
 app.include_router(inventory.router)
+app.include_router(accounts.router)
 app.include_router(carts.router)
 app.include_router(catalog.router)
 app.include_router(bottler.router)
