@@ -43,7 +43,7 @@ def get_catalog() -> List[CatalogItem]:
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
-                    date_published=bk.date_published,
+                    date_published=str(bk.date_published),
                 )
             )
 
