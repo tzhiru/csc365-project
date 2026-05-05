@@ -54,3 +54,56 @@ Response:
   }
 ]
   ```
+The librarian sees that the book they want to remove has id 6.
+### Removing the book from the catalog
+Request:  
+```
+curl -X 'POST' \
+  'https://library-365.onrender.com/catalog/remove/6' \
+  -H 'accept: */*' \
+  -d ''
+```
+Response:  
+The server returns 204.
+
+### Checking the catalog again
+Request:  
+```
+curl -X 'GET' \
+  'https://library-365.onrender.com/catalog/' \
+  -H 'accept: application/json'
+```
+Response:   
+```
+[
+  {
+    "book_id": 3,
+    "title": "awesome book",
+    "author_first": "test first",
+    "author_last": "test last",
+    "date_published": "1222-01-01"
+  },
+  {
+    "book_id": 5,
+    "title": "book about bugs and stuff",
+    "author_first": "test first",
+    "author_last": "test last",
+    "date_published": "2222-02-02"
+  },
+  {
+    "book_id": 7,
+    "title": "book full of whimsy and joy",
+    "author_first": "test 2 first",
+    "author_last": "test 2 last",
+    "date_published": "2006-07-15"
+  },
+  {
+    "book_id": 4,
+    "title": "evil book",
+    "author_first": "test 2 first",
+    "author_last": "test 2 last",
+    "date_published": "2012-12-12"
+  }
+]
+```
+The book that curses you is no longer in the catalog.
