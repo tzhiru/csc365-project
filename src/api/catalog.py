@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from pydantic import BaseModel
 from typing import List
 import sqlalchemy
@@ -50,28 +50,18 @@ def get_catalog() -> List[CatalogItem]:
     return newCatalog
 
 
-# def create_catalog() -> List[CatalogItem]:
-# with db.engine.begin() as connection:
-# catalog = connection.execute(
-# sqlalchemy.text(
-# """
-# SELECT * FROM books
-# """
-# )
-# ).fetchall()
-
-# return catalog
-
-
-# @router.post("/catalog/remove/{book_id}", status_code=status.HTTP_204_NO_CONTENT)  #fix response
-# def delete_book():
-# with db.engine.begin() as connection:
-# connection.execute(
-# sqlalchemy.text(
-# """
-# DELETE FROM books
-# WHERE id = :book_id
-# """
-# ),
-# [{"book_id": book_id}]
-# )
+@router.post("/catalog/remove/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_book(book_id: int):
+    print(f"removing book. id: {book_id}")
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                DELETE FROM books
+                WHERE id = :book_id
+            """
+            ),
+            [{"book_id": book_id}],
+        )
+    # to do: make this be for copies in inventory not the actual book info entries
+    # also put this in another file later so that you need the api key to do this
