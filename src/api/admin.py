@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status
-import sqlalchemy
+
+# import sqlalchemy
 from src.api import auth
-from src import database as db
+# from src import database as db
 
 router = APIRouter(
     prefix="/admin",
