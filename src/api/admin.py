@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
-# import sqlalchemy
+import sqlalchemy
 from src.api import auth
-# from src import database as db
+from src import database as db
 
 router = APIRouter(
     prefix="/admin",
@@ -14,9 +14,17 @@ router = APIRouter(
 @router.post("/reset", status_code=status.HTTP_204_NO_CONTENT)
 def reset():
     """
-    Reset the game state. Gold goes to 100, all potions are removed from
-    inventory, and all barrels are removed from inventory. Carts are all reset.
+    Full reset: clears all tables and restarts PKs.
     """
-
-    # TODO: Implement database write logic here
-    pass
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                TRUNCATE TABLE 
+                books, book_inventory,
+                authors, publishers,
+                patron_accounts
+                RESTART IDENTITY
+                """
+            )
+        )
