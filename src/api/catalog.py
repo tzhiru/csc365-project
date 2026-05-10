@@ -121,6 +121,7 @@ def remove_book_copy(book_copy_id: int):
         if update.rowcount == 0:
             raise HTTPException(status_code=404, detail="Book copy not found")
 
+
 @router.get("/available/", response_model=List[AvailableBook])
 def get_available_books() -> List[AvailableBook]:
     """
@@ -141,7 +142,7 @@ def get_available_books() -> List[AvailableBook]:
                     SELECT book_inventory_id
                     FROM checkouts
                     WHERE returned_at IS NULL)
-                ORDER BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
+                GROUP BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
                 HAVING COUNT(bi.id) > 0
                 ORDER BY books.title ASC
                 """
@@ -178,17 +179,10 @@ def search_catalog(
         books = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT
-                    books.id,
-                    books.title,
-                    authors.first_name AS f,
-                    authors.last_name AS l,
-                    books.date_published,
-                    COUNT(bi.id) FILTER (
-                        WHERE bi.active = TRUE
-                        AND bi.id NOT IN (
-                            SELECT book_inventory_id FROM checkouts WHERE returned_at IS NULL
-                        )
+                SELECT books.id, books.title, authors.first_name AS f,
+                authors.last_name AS l, books.date_published,
+                COUNT(bi.id) FILTER (WHERE bi.active = TRUE
+                   AND bi.id NOT IN (SELECT book_inventory_id FROM checkouts WHERE returned_at IS NULL)
                     ) AS copies_available
                 FROM books
                 JOIN authors ON books.author_id = authors.id
@@ -230,3 +224,59 @@ class CheckoutResponse(BaseModel):
     success: bool
     checkout_id: int
     due_date: str
+
+@router.post("/checkout/{book_id}", response_model=CheckoutResponse)
+def checkout_book(book_id: int, request: CheckoutRequest):
+    """
+    checks out an available copy for a patron. Verifies the patron account
+    exists and that a copy is available. The due date is set to 2 weeks from checkout date."""
+    
+    with db.engine.begin() as connection: 
+        # check if patron exists
+        patron = connection.execute(
+            sqlalchemy.text(
+                
+                "SELECT id FROM patron_accounts WHERE id = :patron_id"
+            ),
+            {"patron_id": request.patron_id},
+        ).fetchone()
+        if not patron:
+            raise HTTPException(status_code=404, detail="Patron account not found.")
+        
+        # find an available copy of the book
+        available_copy = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT bi.id
+                FROM book_inventory bi
+                WHERE bi.book_id = :book_id AND bi.active = TRUE
+                    AND bi.id NOT IN (
+                        SELECT book_inventory_id 
+                        FROM checkouts 
+                        WHERE returned_at IS NULL
+                    )
+                LIMIT 1
+                """
+            ),
+            {"book_id": book_id},
+
+        ).fetchone()
+
+        if not available_copy:
+            raise HTTPException(status_code=409, 
+                                detail="No copies of this book are available currently.",)
+        
+        # create the checkout record with due date 2 weeks from now
+        checkout = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO checkouts (patron_id, book_inventory_id, checkout_date, due_date)
+                VALUES (:patron_id, :copy_id, CURRENT_DATE, CURRENT_DATE + INTERVAL '14 days')
+                RETURNING id, due_date
+                """
+            ),
+            {"patron_id": request.patron_id, "copy_id": available_copy.id},
+        ).one()
+
+    return CheckoutResponse(success=True, checkout_id=checkout.id, due_date=str(checkout.due_date))
+
