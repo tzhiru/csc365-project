@@ -23,9 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
         "book_inventory",
-        sa.Column("active", sa.Boolean()),
-        nullable=False,
-        server_default="yes",
+        sa.Column("active", sa.Boolean(), nullable=False, server_default="yes"),
     )
 
 
