@@ -17,10 +17,11 @@ class CatalogItem(BaseModel):
     title: str
     author_first: str
     author_last: str
+    total_copies: int
     date_published: str
 
 
-@router.get("/catalog/", tags=["catalog"], response_model=List[CatalogItem])
+@router.get("/avaliable/", tags=["catalog"], response_model=List[CatalogItem])
 def get_catalog() -> List[CatalogItem]:
     """
     Retrieves the catalog of items. Each unique item combination should have only a single price.
@@ -33,9 +34,12 @@ def get_catalog() -> List[CatalogItem]:
             sqlalchemy.text(
                 """
                 SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                date_published
-                FROM books
+                date_published, count(*) as total_copies
+                FROM book_inventory
+                JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
+                WHERE active = TRUE
+                GROUP BY books.id, authors.id
                 ORDER BY books.title ASC
                 """
             )
@@ -50,6 +54,7 @@ def get_catalog() -> List[CatalogItem]:
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
+                    total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
                 )
             )
@@ -58,7 +63,7 @@ def get_catalog() -> List[CatalogItem]:
 
 
 @router.post(
-    "/catalog/remove_book/{book_id}",
+    "/remove_book/{book_id}",
     tags=["catalog"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
@@ -84,7 +89,7 @@ def remove_book(book_id: int):
 
 
 @router.post(
-    "/catalog/remove_copy/{book_id}",
+    "/remove_copy/{book_id}",
     tags=["catalog"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
