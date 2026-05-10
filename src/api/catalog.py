@@ -20,6 +20,7 @@ class CatalogItem(BaseModel):
     total_copies: int
     date_published: str
 
+
 class AvailableBook(BaseModel):
     book_id: int
     title: str
@@ -174,7 +175,7 @@ def search_catalog(
     Returns all matching books with how many active copies are currently available.
     """
     results: List[AvailableBook] = []
- 
+
     with db.engine.begin() as connection:
         books = connection.execute(
             sqlalchemy.text(
@@ -200,7 +201,7 @@ def search_catalog(
             ),
             {"title": title, "author": author},
         )
- 
+
         for bk in books:
             results.append(
                 AvailableBook(
@@ -212,7 +213,7 @@ def search_catalog(
                     copies_available=bk.copies_available,
                 )
             )
- 
+
     return results
 
 
