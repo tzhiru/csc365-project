@@ -21,7 +21,7 @@ class CatalogItem(BaseModel):
     date_published: str
 
 class AvailableBook(BaseModel):
-    book_copy_id: int
+    book_id: int
     title: str
     author_first: str
     author_last: str
