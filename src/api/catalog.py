@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import sqlalchemy
 from src.api import auth
 from src import database as db
