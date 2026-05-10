@@ -17,6 +17,7 @@ class CatalogItem(BaseModel):
     title: str
     author_first: str
     author_last: str
+    copies_available: int
     total_copies: int
     date_published: str
 
@@ -70,6 +71,53 @@ def get_available_books() -> List[AvailableBook]:
             )
 
     return availableBooks
+
+
+@router.get("/full_catalog/", tags=["catalog"], response_model=List[CatalogItem])
+def get_books() -> List[CatalogItem]:
+    """
+    Show all books, total copies, and currently avaliable copies.
+    """
+    newCatalog: List[CatalogItem] = []
+
+    with db.engine.begin() as connection:
+        books = connection.execute(
+            sqlalchemy.text(
+                """
+                WITH checked (book_id, total) AS (
+                    SELECT book_id, 
+                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
+                    FROM book_inventory
+                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
+                    GROUP BY book_id
+                    ORDER BY book_id
+                )
+                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
+                date_published, count(*) as total_copies, count(*) - checked.total as copies_avaliable
+                FROM book_inventory
+                JOIN books on book_inventory.book_id = books.id
+                JOIN authors on books.author_id = authors.id
+                JOIN checked on books.id = checked.book_id
+                WHERE active = TRUE
+                GROUP BY books.id, authors.id, checked.total
+                ORDER BY books.title ASC
+                """
+            )
+        )
+        for bk in books:
+            newCatalog.append(
+                CatalogItem(
+                    book_id=bk.id,
+                    title=bk.title,
+                    author_first=bk.f,
+                    author_last=bk.l,
+                    copies_available=bk.copies_available,
+                    total_copies=bk.total_copies,
+                    date_published=str(bk.date_published),
+                )
+            )
+
+    return newCatalog
 
 
 @router.get("/search/", response_model=List[AvailableBook])
