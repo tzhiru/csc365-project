@@ -1,9 +1,5 @@
-from http.client import HTTPException
-from unittest import result
-
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import List
 import sqlalchemy
 from src.api import auth
 from src import database as db
