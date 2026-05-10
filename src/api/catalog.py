@@ -93,7 +93,7 @@ def get_books() -> List[CatalogItem]:
                     ORDER BY book_id
                 )
                 SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                date_published, count(*) as total_copies, count(*) - checked.total as copies_avaliable
+                date_published, count(*) as total_copies, count(*) - checked.total as copies_available
                 FROM book_inventory
                 JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
