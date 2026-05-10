@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
 import sqlalchemy
@@ -68,15 +68,18 @@ def remove_book(book_id: int):
     """
     print(f"removing book from catalog. id: {book_id}")
     with db.engine.begin() as connection:
-        connection.execute(
+        update = connection.execute(
             sqlalchemy.text(
                 """
                 DELETE FROM books
                 WHERE id = :book_id
+                RETURNING id
             """
             ),
             [{"book_id": book_id}],
         )
+        if update.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Book not found")
     # also put this in another file later so that you need the api key to do this
 
 
@@ -91,13 +94,16 @@ def remove_book_copy(book_copy_id: int):
     """
     print(f"remove book copy. id: {book_copy_id}")
     with db.engine.begin() as connection:
-        connection.execute(
+        update = connection.execute(
             sqlalchemy.text(
                 """
                 UPDATE book_inventory
                 SET active = FALSE
                 WHERE id = :book_copy_id
+                RETURNING id
             """
             ),
             [{"book_copy_id": book_copy_id}],
         )
+        if update.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Book copy not found")
