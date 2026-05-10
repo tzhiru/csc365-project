@@ -1,36 +1,21 @@
 from fastapi import FastAPI
-from src.api import carts, catalog, bottler, barrels, admin, info, inventory, accounts
+from src.api import catalog, admin, checkout, accounts
 from starlette.middleware.cors import CORSMiddleware
 
 description = """
-Central Coast Cauldrons is the premier ecommerce site for all your alchemical desires.
+Library project for CSC 365
 """
 tags_metadata = [
-    {"name": "cart", "description": "Place potion orders."},
     {"name": "accounts", "description": "Manage patron accounts."},
     {"name": "catalog", "description": "View the available potions."},
-    {"name": "bottler", "description": "Bottle potions from the raw magical elixir."},
-    {
-        "name": "barrels",
-        "description": "Buy barrels of raw magical elixir for making potions.",
-    },
     {"name": "admin", "description": "Where you reset the game state."},
-    {"name": "info", "description": "Get updates on time"},
-    {
-        "name": "inventory",
-        "description": "Get the current inventory of shop and buying capacity.",
-    },
+    {"name": "checkout", "description": "Check out or return a book"},
 ]
 
 app = FastAPI(
-    title="Central Coast Cauldrons",
+    title="library365",
     description=description,
     version="0.0.1",
-    terms_of_service="http://example.com/terms/",
-    contact={
-        "name": "Lucas Pierce",
-        "email": "lupierce@calpoly.edu",
-    },
     openapi_tags=tags_metadata,
 )
 
@@ -44,16 +29,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(inventory.router)
 app.include_router(accounts.router)
-app.include_router(carts.router)
 app.include_router(catalog.router)
-app.include_router(bottler.router)
-app.include_router(barrels.router)
 app.include_router(admin.router)
-app.include_router(info.router)
+app.include_router(checkout.router)
 
 
 @app.get("/")
 async def root():
-    return {"message": "Shop is open for business!"}
+    return {"message": "App is open."}

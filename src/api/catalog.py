@@ -20,6 +20,7 @@ class CatalogItem(BaseModel):
     total_copies: int
     date_published: str
 
+
 class AvailableBook(BaseModel):
     book_id: int
     title: str
@@ -121,6 +122,7 @@ def remove_book_copy(book_copy_id: int):
         if update.rowcount == 0:
             raise HTTPException(status_code=404, detail="Book copy not found")
 
+
 @router.get("/available/", response_model=List[AvailableBook])
 def get_available_books() -> List[AvailableBook]:
     """
@@ -173,7 +175,7 @@ def search_catalog(
     Returns all matching books with how many active copies are currently available.
     """
     results: List[AvailableBook] = []
- 
+
     with db.engine.begin() as connection:
         books = connection.execute(
             sqlalchemy.text(
@@ -206,7 +208,7 @@ def search_catalog(
             ),
             {"title": title, "author": author},
         )
- 
+
         for bk in books:
             results.append(
                 AvailableBook(
@@ -218,7 +220,7 @@ def search_catalog(
                     copies_available=bk.copies_available,
                 )
             )
- 
+
     return results
 
 
