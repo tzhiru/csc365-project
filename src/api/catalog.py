@@ -58,12 +58,15 @@ def get_catalog() -> List[CatalogItem]:
 
 
 @router.post(
-    "/catalog/remove/{book_id}",
+    "/catalog/remove_book/{book_id}",
     tags=["catalog"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def remove_book(book_id: int):
-    print(f"removing book. id: {book_id}")
+    """
+    Remove a book type from the catalog.
+    """
+    print(f"removing book from catalog. id: {book_id}")
     with db.engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(
@@ -74,5 +77,27 @@ def remove_book(book_id: int):
             ),
             [{"book_id": book_id}],
         )
-    # to do: make this be for copies in inventory not the actual book info entries
     # also put this in another file later so that you need the api key to do this
+
+
+@router.post(
+    "/catalog/remove_copy/{book_id}",
+    tags=["catalog"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def remove_book_copy(book_copy_id: int):
+    """
+    Marks book copy from inventory as inactive/unavaliable.
+    """
+    print(f"remove book copy. id: {book_copy_id}")
+    with db.engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text(
+                """
+                UPDATE books_inventory
+                active = 'no'
+                WHERE id = :book_copy_id
+            """
+            ),
+            [{"book_copy_id": book_copy_id}],
+        )
