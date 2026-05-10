@@ -95,7 +95,7 @@ def remove_book_copy(book_copy_id: int):
             sqlalchemy.text(
                 """
                 UPDATE books_inventory
-                active = FALSE
+                SET active = FALSE
                 WHERE id = :book_copy_id
             """
             ),
