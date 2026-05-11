@@ -27,7 +27,7 @@ class PatronAccountInfo(BaseModel):
     address: str
 
 
-@router.get("/accounts/list/", tags=["accounts"], response_model=List[PatronAccount])
+@router.get("/list/", tags=["accounts"], response_model=List[PatronAccount])
 def get_accounts() -> List[PatronAccount]:
     """
     Retrieves the list of all patron accounts.
@@ -63,7 +63,7 @@ class CreateAccountResponse(BaseModel):
     patron_id: int
 
 
-@router.post("/accounts/create", response_model=CreateAccountResponse)
+@router.post("/create", response_model=CreateAccountResponse)
 def post_new_account(acct: PatronAccountInfo):
     """
     Create a new account.
