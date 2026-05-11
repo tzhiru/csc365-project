@@ -10,12 +10,14 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+
 class PatronAccount(BaseModel):
     account_id: int
     first_name: str
     last_name: str
     phone_number: str
     address: str
+
 
 @router.get("/accounts/{account_id}", response_model=PatronAccount)
 def get_patron_account(account_id: int) -> PatronAccount:
@@ -32,12 +34,11 @@ def get_patron_account(account_id: int) -> PatronAccount:
                 """
             ),
             {"account_id": account_id},
-            
         ).fetchone()
 
         if not row:
             raise HTTPException(status_code=404, detail="Patron account not found.")
-        
+
         return PatronAccount(
             account_id=row.id,
             first_name=row.first_name,
@@ -45,6 +46,7 @@ def get_patron_account(account_id: int) -> PatronAccount:
             phone_number=row.phone,
             address=row.address,
         )
+
 
 @router.post("/reset", status_code=status.HTTP_204_NO_CONTENT)
 def reset():

@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api import catalog, admin, checkout, accounts
+from src.api import catalog, admin, checkout, accounts, inventory
 from starlette.middleware.cors import CORSMiddleware
 
 description = """
@@ -7,9 +7,10 @@ Library project for CSC 365
 """
 tags_metadata = [
     {"name": "accounts", "description": "Manage patron accounts."},
-    {"name": "catalog", "description": "View the available potions."},
+    {"name": "catalog", "description": "View the library catalog."},
     {"name": "admin", "description": "Where you reset the game state."},
-    {"name": "checkout", "description": "Check out or return a book"},
+    {"name": "checkout", "description": "Check out or return a book."},
+    {"name": "inventory", "description": "Manage library catalog."},
 ]
 
 app = FastAPI(
@@ -33,6 +34,7 @@ app.include_router(accounts.router)
 app.include_router(catalog.router)
 app.include_router(admin.router)
 app.include_router(checkout.router)
+app.include_router(inventory.router)
 
 
 @app.get("/")
