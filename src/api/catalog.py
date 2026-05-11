@@ -29,8 +29,7 @@ class AvailableBook(BaseModel):
     author_last: str
     copies_available: int
     date_published: str
-
-
+    
 @router.get("/available/", response_model=List[AvailableBook])
 def get_available_books() -> List[AvailableBook]:
     """
@@ -191,7 +190,7 @@ def search_catalog(
                 FROM books
                 JOIN authors ON books.author_id = authors.id
                 LEFT JOIN book_inventory bi ON bi.book_id = books.id
-                WHERE books.title = :title AND (authors.first_name = :author OR authors.last_name = :author)
+                WHERE books.title = :title OR (authors.first_name = :author OR authors.last_name = :author)
                 ORDER BY books.title ASC
                 """
             ),
