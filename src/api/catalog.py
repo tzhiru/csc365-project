@@ -120,7 +120,58 @@ def get_books() -> List[CatalogItem]:
     return newCatalog
 
 
-@router.get("/search/", response_model=List[AvailableBook])
+# @router.get("/search/", response_model=List[AvailableBook])
+# def search_catalog(
+#     title: Optional[str] = None,
+#     author: Optional[str] = None,
+# ) -> List[AvailableBook]:
+#     """
+#     Search the catalog by title and/or author name.
+#     Returns all matching books with how many active copies are currently available.
+#     """
+#     results: List[AvailableBook] = []
+
+#     with db.engine.begin() as connection:
+#         books = connection.execute(
+#             sqlalchemy.text(
+#                 """
+#                 SELECT books.id, books.title, authors.first_name AS f,
+#                 authors.last_name AS l, books.date_published,
+#                 COUNT(bi.id) FILTER (WHERE bi.active = TRUE
+#                    AND bi.id NOT IN (SELECT book_inventory_id FROM checkouts WHERE returned_at IS NULL)
+#                     ) AS copies_available
+#                 FROM books
+#                 JOIN authors ON books.author_id = authors.id
+#                 LEFT JOIN book_inventory bi ON bi.book_id = books.id
+#                 WHERE
+#                     (:title::text IS NULL OR books.title ILIKE '%' || :title::text || '%')
+#                     AND (
+#                         :author::text IS NULL
+#                         OR authors.first_name ILIKE '%' || :author::text || '%'
+#                         OR authors.last_name ILIKE '%' || :author::text || '%'
+#                     )
+#                 GROUP BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
+#                 ORDER BY books.title ASC
+#                 """
+#             ),
+#             {"title": title, "author": author},
+#         )
+
+#         for bk in books:
+#             results.append(
+#                 AvailableBook(
+#                     book_id=bk.id,
+#                     title=bk.title,
+#                     author_first=bk.f,
+#                     author_last=bk.l,
+#                     date_published=str(bk.date_published),
+#                     copies_available=bk.copies_available,
+#                 )
+#             )
+
+#     return results
+
+
 def search_catalog(
     title: Optional[str] = None,
     author: Optional[str] = None,
@@ -136,21 +187,11 @@ def search_catalog(
             sqlalchemy.text(
                 """
                 SELECT books.id, books.title, authors.first_name AS f,
-                authors.last_name AS l, books.date_published,
-                COUNT(bi.id) FILTER (WHERE bi.active = TRUE
-                   AND bi.id NOT IN (SELECT book_inventory_id FROM checkouts WHERE returned_at IS NULL)
-                    ) AS copies_available
+                authors.last_name AS l, books.date_published
                 FROM books
                 JOIN authors ON books.author_id = authors.id
                 LEFT JOIN book_inventory bi ON bi.book_id = books.id
-                WHERE
-                    (:title::text IS NULL OR books.title ILIKE '%' || :title::text || '%')
-                    AND (
-                        :author::text IS NULL
-                        OR authors.first_name ILIKE '%' || :author::text || '%'
-                        OR authors.last_name ILIKE '%' || :author::text || '%'
-                    )
-                GROUP BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
+                WHERE books.title = :title AND (authors.first_name = :author OR authors.last_name = :author)
                 ORDER BY books.title ASC
                 """
             ),
@@ -165,7 +206,7 @@ def search_catalog(
                     author_first=bk.f,
                     author_last=bk.l,
                     date_published=str(bk.date_published),
-                    copies_available=bk.copies_available,
+                    copies_available=1
                 )
             )
 
