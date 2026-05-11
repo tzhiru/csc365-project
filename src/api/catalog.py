@@ -189,11 +189,11 @@ def search_catalog(
                 JOIN authors ON books.author_id = authors.id
                 LEFT JOIN book_inventory bi ON bi.book_id = books.id
                 WHERE
-                    (:title IS NULL OR books.title ILIKE '%' || :title || '%')
+                    (:title::text IS NULL OR books.title ILIKE '%' || :title::text || '%')
                     AND (
-                        :author IS NULL
-                        OR authors.first_name ILIKE '%' || :author || '%'
-                        OR authors.last_name ILIKE '%' || :author || '%'
+                        :author::text IS NULL
+                        OR authors.first_name ILIKE '%' || :author::text || '%'
+                        OR authors.last_name ILIKE '%' || :author::text || '%'
                     )
                 GROUP BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
                 ORDER BY books.title ASC
