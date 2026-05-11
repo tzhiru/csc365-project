@@ -171,7 +171,7 @@ def get_books() -> List[CatalogItem]:
 
 #     return results
 
-
+@router.get("/search/", response_model=List[AvailableBook])
 def search_catalog(
     title: Optional[str] = None,
     author: Optional[str] = None,
