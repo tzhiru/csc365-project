@@ -170,27 +170,38 @@ def get_books() -> List[CatalogItem]:
 
 #     return results
 
-@router.get("/search/", response_model=List[AvailableBook])
+@router.get("/search/", response_model=List[CatalogItem])
 def search_catalog(
     title: Optional[str] = None,
     author: Optional[str] = None,
-) -> List[AvailableBook]:
+) -> List[CatalogItem]:
     """
     Search the catalog by title and/or author name.
     Returns all matching books with how many active copies are currently available.
     """
-    results: List[AvailableBook] = []
+    results: List[CatalogItem] = []
 
     with db.engine.begin() as connection:
         books = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT books.id, books.title, authors.first_name AS f,
-                authors.last_name AS l, books.date_published
-                FROM books
-                JOIN authors ON books.author_id = authors.id
-                LEFT JOIN book_inventory bi ON bi.book_id = books.id
-                WHERE books.title = :title OR (authors.first_name = :author OR authors.last_name = :author)
+                WITH checked (book_id, total) AS (
+                    SELECT book_id, 
+                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
+                    FROM book_inventory
+                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
+                    GROUP BY book_id
+                    ORDER BY book_id
+                )
+                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
+                date_published, count(*) as total_copies, count(*) - checked.total as copies_available
+                FROM book_inventory
+                JOIN books on book_inventory.book_id = books.id
+                JOIN authors on books.author_id = authors.id
+                JOIN checked on books.id = checked.book_id
+                WHERE active = TRUE
+                AND (books.title = :title OR (authors.first_name = :author OR authors.last_name = :author))
+                GROUP BY books.id, authors.id, checked.total
                 ORDER BY books.title ASC
                 """
             ),
@@ -199,13 +210,14 @@ def search_catalog(
 
         for bk in books:
             results.append(
-                AvailableBook(
+                CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
                     date_published=str(bk.date_published),
-                    copies_available=1
+                    copies_available=bk.copies_available,
+                    total_copies=bk.total_copies
                 )
             )
 
