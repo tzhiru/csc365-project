@@ -41,7 +41,7 @@ def remove_book(book_id: int):
 
 @router.post(
     "/remove_copy/{book_id}",
-    tags=["catalog"],
+    tags=["inventory"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def remove_book_copy(book_copy_id: int):
