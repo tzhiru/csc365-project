@@ -112,3 +112,87 @@ Response:
 }
 ```
 She uses the book copy id to return the book.  
+
+## Catalog Search and Alternative Checkout Workflow 
+A student has a research paper due and wants to find sources on database design. 
+Since he doesn't know exact titles, he first searches the library catalog by calling `GET /catalog/search/?title=database`. 
+The API then searches the catalog and returns a list of matching books. He sees that Database Management is listed with a `book_id` 102 but has `copies_available` of 0. 
+Then, the student wants to find a different book to check out. He browses the returned list again and sees SQL for Beginners is available with a `book_id` 105. 
+He then checks out the book by calling `POST /checkout/105` and passing in his `patron_id`. The API verifies that his account exists and that a copy of the book is available. The checkout succeeds, and the API returns a response that indicates success along with a `copy_id` of 342. After 2 weeks, the student is ready to return the book. He calls `POST /checkout/return/342`. The API records the return date for that specific checkout record.
+
+### Test results
+**Searching the catalog:**  
+Request:  
+```
+curl -X 'GET' \
+  'https://library-365.onrender.com/catalog/search/?title=database' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode'
+```
+Response:  
+```
+[
+  {
+    "book_id": 102,
+    "title": "Database Management",
+    "author_first": "Alice",
+    "author_last": "Smith",
+    "copies_available": 0,
+    "total_copies": 2,
+    "date_published": "2018-05-12"
+  },
+  {
+    "book_id": 105,
+    "title": "SQL for Beginners",
+    "author_first": "Bob",
+    "author_last": "Jones",
+    "copies_available": 1,
+    "total_copies": 3,
+    "date_published": "2020-01-01"
+  }
+]
+```
+He sees that "Database Management" has 0 copies, but "SQL for Beginners" has 1 copy available.  
+  
+**Checking out a book:**  
+Request:  
+```
+curl -X 'POST' \
+  'https://library-365.onrender.com/checkout/105' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "patron_id": 12
+}'
+```
+Response:  
+```
+{
+  "success": true,
+  "checkout_id": 89,
+  "due_date": "2026-05-25",
+  "copy_id": 342
+}
+```
+He sees that the copy of book he has checked out has id number 342.  
+  
+**Returning a book:**  
+Request:  
+```
+curl -X 'POST' \
+  'https://library-365.onrender.com/checkout/return/342' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode' \
+  -d ''
+```
+Response:  
+```
+{
+  "success": true,
+  "checkout_id": 89,
+  "patron_id": 12,
+  "copy_id": 342
+}
+```
+He uses the book copy id to return the book.
