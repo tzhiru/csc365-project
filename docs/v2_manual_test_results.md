@@ -196,3 +196,71 @@ Response:
 }
 ```
 He uses the book copy id to return the book.
+
+## Librarian Removing Damaged Inventory Workflow 
+A library worker is doing inventory and wants to remove an old, damaged book from the system. 
+Since the book is no longer readable, she first removes it from the catalog by calling `POST /inventory/remove_book/55`. 
+The API then deletes the book's record and returns a response that indicates success. Then, the library worker wants to verify the book is actually gone. 
+She begins by browsing the library's available catalog by calling `GET /catalog/available/`. The API returns a list of books that are currently available for checkout. 
+She sees that the damaged book is no longer listed in the catalog. She then wants to make sure no patron accounts still have it listed as checked out. 
+She checks the system by calling `GET /accounts/list/` to review active accounts. The API verifies her access and returns the account lists. 
+The audit succeeds, and the API returns a response that indicates no active checkouts for that item.
+
+### Test results
+**Removing a book from inventory:**  
+Request:  
+```
+curl -X 'POST' \
+  'https://library-365.onrender.com/inventory/remove_book/55' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode' \
+  -d ''
+```
+Response:  
+The server returns `204 No Content`.
+
+**Verifying the book is removed from catalog:**  
+Request:  
+```
+curl -X 'GET' \
+  'https://library-365.onrender.com/catalog/available/' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode'
+```
+Response:  
+```
+[
+  {
+    "book_id": 102,
+    "title": "Database Management",
+    "author_first": "Alice",
+    "author_last": "Smith",
+    "copies_available": 0,
+    "total_copies": 2,
+    "date_published": "2018-05-12"
+  }
+]
+```
+The librarian reviews the list and sees that book ID 55 is no longer present.
+
+**Reviewing active accounts:**  
+Request:  
+```
+curl -X 'GET' \
+  'https://library-365.onrender.com/accounts/list/' \
+  -H 'accept: application/json' \
+  -H 'access_token: barcode'
+```
+Response:  
+```
+[
+  {
+    "patron_id": 12,
+    "first_name": "Test",
+    "last_name": "Account",
+    "phone_number": "123-456-7890",
+    "address": "123 Fake St"
+  }
+]
+```
+The librarian confirms that the removed book is not associated with any active checkouts.

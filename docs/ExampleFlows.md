@@ -15,9 +15,9 @@ Then, the student wants to find a different book to check out. He browses the re
 He then checks out the book by calling `POST /checkout/105` and passing in his `patron_id`. The API verifies that his account exists and that a copy of the book is available. The checkout succeeds, and the API returns a response that indicates success along with a `copy_id` of 342. After 2 weeks, the student is ready to return the book. He calls `POST /checkout/return/342`. The API records the return date for that specific checkout record.
 ## 3: Librarian Removing Damaged Inventory Workflow 
 A library worker is doing inventory and wants to remove an old, damaged book from the system. 
-Since the book is no longer readable, she first removes it from the catalog by calling `DELETE /catalog/remove/55/`. 
+Since the book is no longer readable, she first removes it from the catalog by calling `POST /inventory/remove_book/55`. 
 The API then deletes the book's record and returns a response that indicates success. Then, the library worker wants to verify the book is actually gone. 
 She begins by browsing the library's available catalog by calling `GET /catalog/available/`. The API returns a list of books that are currently available for checkout. 
 She sees that the damaged book is no longer listed in the catalog. She then wants to make sure no patron accounts still have it listed as checked out. 
-She checks the system by calling `GET /admin/accounts/` to review active accounts. The API verifies her admin access and returns the account lists. 
+She checks the system by calling `GET /accounts/list/` to review active accounts. The API verifies her access and returns the account lists. 
 The audit succeeds, and the API returns a response that indicates no active checkouts for that item.
