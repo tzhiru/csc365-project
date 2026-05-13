@@ -29,7 +29,8 @@ class AvailableBook(BaseModel):
     author_last: str
     copies_available: int
     date_published: str
-    
+
+
 @router.get("/available/", response_model=List[AvailableBook])
 def get_available_books() -> List[AvailableBook]:
     """
@@ -170,6 +171,7 @@ def get_books() -> List[CatalogItem]:
 
 #     return results
 
+
 @router.get("/search/", response_model=List[CatalogItem])
 def search_catalog(
     title: Optional[str] = None,
@@ -217,7 +219,7 @@ def search_catalog(
                     author_last=bk.l,
                     date_published=str(bk.date_published),
                     copies_available=bk.copies_available,
-                    total_copies=bk.total_copies
+                    total_copies=bk.total_copies,
                 )
             )
 
