@@ -96,6 +96,7 @@ def request_acquisition(request: AcquisitionRequest):
             ),
             {"title": request.title},
         ).fetchone()
+        assert other_requests is not None  # for type checker
 
         already_requested = other_requests.total > 0
 
@@ -114,6 +115,7 @@ def request_acquisition(request: AcquisitionRequest):
                 "author": request.author,
             },
         ).fetchone()
+        assert new_request is not None  # for type checker
 
         if already_requested:
             message = (f"'{request.title}' has been added to the wishlist. This title has already been requested by another patron.")
