@@ -228,3 +228,64 @@ Allows a patron to leave a 1-5 star rating and an optional text review for a boo
   "review_id": "string",
   "message": "string"
 }
+
+```
+## 7. Acquisition Request / Wishlist (Complex Endpoint)
+Allows a patron to submit a request for a book that is not currently in the library catalog. This endpoint is complex because it performs multiple reads before writing as it verifies the patron exists, checks whether the book already exists in the catalog, checks whether the patron has already submitted a request for this title, and checks whether other patrons have also requested it. Also, the response message adapts based on existing demand for the title.
+
+### 1. `/wishlist/request/` (POST)
+Submit a request for a book not currently in the catalog.
+
+**Request:**
+
+ ```json
+[
+  {
+    "patron_id": "number",
+    "title": "string",
+    "author": "string"
+  }
+]
+```
+**Response:**
+
+ ```json
+[
+  {
+    "success": "boolean",
+    "message": "string",
+    "wishlist_id": "number" 
+  }
+]
+```
+### 2. `/wishlist/` (GET)
+Admin view of all acquisition requests, ordered alphabetically by title.
+
+**Response:**
+
+ ```json
+[
+  {
+    "wishlist_id": "number",
+    "patron_id": "number",
+    "title": "string",
+    "author": "string",
+    "requested_at": "string",
+    "fulfilled": "boolean"
+  }
+]
+
+```
+### 2. `/wishlist/{wishlist_id}/fulfill/` (POST)
+Admin endpoint to mark an acquisition request as fulfilled. Automatically marks all other pending requests for the same title as fulfilled as well.
+
+**Response:**
+
+ ```json
+[
+  {
+    "success": "boolean",
+    "message": "string",
+    "wishlist_id": "number"
+  }
+]
