@@ -4,6 +4,7 @@ from src.api import auth
 import sqlalchemy
 from src import database as db
 from typing import List
+import datetime
 
 
 router = APIRouter(
@@ -122,14 +123,14 @@ def place_hold(book_id: int, request: HoldRequest):
                 "book_id": book_id,
             },
         ).one()
-        
+
         book_hold_count = book_current_holds.total_holds
         if book_hold_count >= 5:
             raise HTTPException(
                 status_code=403,
                 detail="This book already has 5 holds. You can create a hold on this book after preexisting holds are fufilled.",
             )
-        
+
         # shows expected return dates of copies of the book
         book_current_checkouts = connection.execute(
             sqlalchemy.text(
@@ -145,14 +146,18 @@ def place_hold(book_id: int, request: HoldRequest):
                 "book_id": book_id,
             },
         )
-        
+
+        # calculate expected date the hold will be avaliable
+
         due_dates = []
         for row in book_current_checkouts:
             due_dates.append(row.due_date)
-            
-        if len(due_dates) > book_hold_count:
-            expect_date = due_dates[book_hold_count]
-        
+
+        week_count = 2 * (book_hold_count // len(due_dates))
+        expect_date = due_dates[book_hold_count % len(due_dates)] + datetime.timedelta(
+            weeks=week_count
+        )
+
         # create the hold
         hold = connection.execute(
             sqlalchemy.text(
@@ -165,7 +170,7 @@ def place_hold(book_id: int, request: HoldRequest):
             {
                 "book_id": book_id,
                 "patron_id": request.patron_id,
-                "date": available_copy.id,
+                "date": expect_date,
             },
         ).one()
 
@@ -210,10 +215,10 @@ def return_book(book_id: int):
         )
         return [
             HoldData(
-                hold_id=row.id, 
-                patron_id=row.patron_id, 
-                creation_date=str(row.creation_date)
-                expected_date=str(row.expected_date)
+                hold_id=row.id,
+                patron_id=row.patron_id,
+                creation_date=str(row.creation_date),
+                expected_date=str(row.expected_date),
             )
             for row in res
         ]
