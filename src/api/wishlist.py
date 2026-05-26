@@ -11,15 +11,20 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+
 class AcquisitionRequest(BaseModel):
     patron_id: int
     title: str
-    author: str | None = None # author can be optional since some patrons might just enter a title without knowing the author
+    author: str | None = (
+        None  # author can be optional since some patrons might just enter a title without knowing the author
+    )
+
 
 class AcquisitionResponse(BaseModel):
     success: bool
     message: str
     wishlist_id: int | None = None
+
 
 class WishlistItem(BaseModel):
     wishlist_id: int
@@ -29,9 +34,10 @@ class WishlistItem(BaseModel):
     requested_at: str
     fulfilled: bool
 
+
 @router.post("/request/", response_model=AcquisitionResponse)
 def request_acquisition(request: AcquisitionRequest):
-    
+
     with db.engine.begin() as connection:
         # 1 verifies patron exists
         patron = connection.execute(
@@ -46,7 +52,7 @@ def request_acquisition(request: AcquisitionRequest):
 
         if not patron:
             raise HTTPException(status_code=404, detail="Patron account not found.")
-        
+
         # 2 checks if the book already exists in the catalog
         existing_book = connection.execute(
             sqlalchemy.text(
@@ -62,10 +68,10 @@ def request_acquisition(request: AcquisitionRequest):
 
         if existing_book:
             raise HTTPException(
-                status_code=409, 
+                status_code=409,
                 detail=f"'{request.title}' already exists in the catalog. You can check it out or place a hold if it's currently unavailable.",
             )
-        
+
         # 3 checks if same patron already requested this title
         duplicate = connection.execute(
             sqlalchemy.text(
@@ -76,15 +82,15 @@ def request_acquisition(request: AcquisitionRequest):
                 AND fulfilled = FALSE
                 """
             ),
-            { "patron_id": request.patron_id, "title": request.title},
+            {"patron_id": request.patron_id, "title": request.title},
         ).fetchone()
 
         if duplicate:
             raise HTTPException(
-                status_code=409, 
+                status_code=409,
                 detail="You have already requested this book.",
             )
-        
+
         # 4 checks if another patron already requested it
         other_requests = connection.execute(
             sqlalchemy.text(
@@ -118,12 +124,17 @@ def request_acquisition(request: AcquisitionRequest):
         assert new_request is not None  # for type checker
 
         if already_requested:
-            message = (f"'{request.title}' has been added to the wishlist. This title has already been requested by another patron.")
-        
-        else: 
-            message = (f"'{request.title}' has been added to the wishlist.")
+            message = f"'{request.title}' has been added to the wishlist. This title has already been requested by another patron."
 
-    return AcquisitionResponse(success=True, message=message, wishlist_id=new_request.id,)
+        else:
+            message = f"'{request.title}' has been added to the wishlist."
+
+    return AcquisitionResponse(
+        success=True,
+        message=message,
+        wishlist_id=new_request.id,
+    )
+
 
 @router.get("/", response_model=List[WishlistItem])
 def get_wishlist():
@@ -141,7 +152,7 @@ def get_wishlist():
                 """
             )
         )
-        
+
         return [
             WishlistItem(
                 wishlist_id=row.id,
@@ -153,6 +164,7 @@ def get_wishlist():
             )
             for row in rows
         ]
+
 
 @router.post("/{wishlist_id}/fulfill/", response_model=AcquisitionResponse)
 def fulfill_request(wishlist_id: int):
@@ -174,7 +186,7 @@ def fulfill_request(wishlist_id: int):
 
         if not request:
             raise HTTPException(status_code=404, detail="Wishlist item not found.")
-        
+
         # mark the request as fulfilled
         connection.execute(
             sqlalchemy.text(
@@ -188,7 +200,7 @@ def fulfill_request(wishlist_id: int):
         )
 
     return AcquisitionResponse(
-            success=True,
-            message=f"'{request.title}' has been marked as fulfilled.",
-            wishlist_id=wishlist_id
+        success=True,
+        message=f"'{request.title}' has been marked as fulfilled.",
+        wishlist_id=wishlist_id,
     )
