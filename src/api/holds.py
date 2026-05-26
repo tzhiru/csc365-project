@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
 from src import database as db
+from typing import List
 
 
 router = APIRouter(
@@ -23,13 +24,6 @@ class HoldResponse(BaseModel):
     hold_id: int
     book_id: int
     expected_date: str
-
-
-class ReturnResponse(BaseModel):
-    success: bool
-    checkout_id: int
-    patron_id: int
-    copy_id: int
 
 
 @router.post("/{book_id}", response_model=HoldResponse)
@@ -159,45 +153,39 @@ def place_hold(book_id: int, request: HoldRequest):
     )
 
 
-@router.post("/return/{book_copy_id}", response_model=ReturnResponse)
-def return_book(book_copy_id: int):
-    """
-    Returns a checked out book (via copy id).
-    """
+class HoldData(BaseModel):
+    hold_id: int
+    patron_id: int
+    expected_date: str
 
+
+@router.get("/view_holds/{book_id}", response_model=List[HoldData])
+def return_book(book_id: int):
+    """
+    Display all active holds for a certain book.
+    """
     with db.engine.begin() as connection:
-        find_checkout = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT id, patron_id
-                FROM checkouts
-                WHERE book_inventory_id = :copy AND returned_at IS NULL
-                LIMIT 1
-                """
-            ),
-            {"copy": book_copy_id},
+        book = connection.execute(
+            sqlalchemy.text("SELECT id FROM books WHERE id = :book_id"),
+            {"book_id": book_id},
         ).fetchone()
+        if not book:
+            raise HTTPException(status_code=404, detail="Book not found.")
 
-        if not find_checkout:
-            raise HTTPException(
-                status_code=409,
-                detail="This book copy is not currently checked out.",
-            )
-
-        connection.execute(
+        res = connection.execute(
             sqlalchemy.text(
                 """
-                UPDATE checkouts
-                SET returned_at = CURRENT_DATE
-                WHERE id = :checkout_id
+                SELECT id, patron_id, expected_date
+                FROM holds
+                WHERE book_id = :book_id AND active = TRUE
+                ORDER BY id ASC
                 """
             ),
-            {"checkout_id": find_checkout.id},
+            [{"book_id": book_id}],
         )
-
-    return ReturnResponse(
-        success=True,
-        checkout_id=find_checkout.id,
-        patron_id=find_checkout.patron_id,
-        copy_id=book_copy_id,
-    )
+        return [
+            HoldData(
+                hold_id=row.id, patron_id=row.patron_id, expected_date=row.expected_date
+            )
+            for row in res
+        ]
