@@ -162,7 +162,7 @@ def place_hold(book_id: int, request: HoldRequest):
                 """
                 INSERT INTO holds (book_id, patron_id, expected_date)
                 VALUES (:book_id, :patron_id, :date)
-                RETURNING id, due_date
+                RETURNING id, expected_date
                 """
             ),
             {
