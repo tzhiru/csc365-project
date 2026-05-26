@@ -310,7 +310,7 @@ Admin endpoint to mark an acquisition request as fulfilled. Automatically marks 
 ]
 ```
 ## 8. Placing a hold (Complex Endpoint)
-### 1. `/holds/{book_id}/` (POST)
+### 1. `/holds/{book_id}` (POST)
 Place a hold on a book that currently has all copies checked out.  
 A single book type can only have 5 active holds at a time. A single user can only have 10 active holds at a time. The hold request will fail if these conditions are not met, or if the targeted book is already avaliable.
 **Request:**
