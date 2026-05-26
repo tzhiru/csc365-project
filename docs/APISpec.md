@@ -1,6 +1,6 @@
 # API Specification  
 ## 1. Creating a new account  
-### 1. `/accounts/new` (POST)  
+### 1. `/accounts/create` (POST)  
 Creates an account for a new patron and returns the account id to be used for checking out books.  
   
 **Request:**  
@@ -49,11 +49,8 @@ Searches the library catalog via specific parameters. Returns a list of all matc
 ```json
 [
   {
-    "book_id": "number", //optional
-    "name": "string", //optional
+    "title": "string", //optional
     "author": "string", //optional
-    "category": "string", //optional
-    "average_rating": "float", //optional, between 0 and 10
   }
 ]
 ```
@@ -62,15 +59,16 @@ Searches the library catalog via specific parameters. Returns a list of all matc
 [
   {
     "book_id": "number",
-    "name": "string",
-    "author": "string",
-    "description": "string",
-    "category": "string",
-    "quantity_avaliable": "number",
+    "title": "string",
+    "author_first": "string",
+    "author_last": "string",
+    "copies_available": "number",
+    "total_copies": "number",
+    "date_published": "string"
   }
 ]
 ```
-### 3. `/catalog/checkout/{book_id}/` (POST)  
+### 3. `/checkout/{book_id}/` (POST)  
 Checks out the specified copy of a book under the user's account.  
   
 **Request**:  
@@ -90,10 +88,10 @@ Checks out the specified copy of a book under the user's account.
 ```
 ## 3. Returning books  
 Marks a checked out item as returned.
-### 1. `/catalog/return/{book_id}/` (POST) 
+### 1. `/checkout/return/{book_copy_id}/` (POST) 
 Returns the specified book and removes it from the user's list of checked out books
 
-### 2. `/accounts/{account_id}/checkedout/` (GET) 
+### 2. `/admin/accounts/{account_id}/checkouts/` (GET) 
 Displays all books currently checked out under a specific account
 
 **Response:**  
@@ -108,7 +106,7 @@ Displays all books currently checked out under a specific account
 ]
 ```
 ## 4. Editing the library catalog (admin functions)  
-### 1. `/catalog/add/` (POST)
+### 1. `/catalog/add` (POST)
 Adds a new item to the library catalog.
 
 **Request**:
@@ -130,7 +128,7 @@ Adds a new item to the library catalog.
 }
 ```
 
-### 2. `/catalog/remove/{book_id}/` (DELETE)
+### 2. `/inventory/remove_book/{book_id}/` (DELETE)
 Removes a book from the library catalog.
 
 **Response**:  
@@ -143,7 +141,7 @@ Removes a book from the library catalog.
 
 ## 5. Viewing user account information/checked out books (admin functions) 
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
-### 1. `/admin/accounts/` (GET)
+### 1. `/admin/accounts/list` (GET)
 Displays a list of all library patron accounts.
 
 **Response**:  
@@ -173,7 +171,7 @@ Displays detailed information for a specific patron account.
     "phone_number": "string"
  }
 ```
-### 3. `/admin/accounts/{account_id}/checkedout/` (GET)
+### 3. `/admin/accounts/{account_id}/checkouts/` (GET)
  
 **Response**:
  
@@ -228,3 +226,64 @@ Allows a patron to leave a 1-5 star rating and an optional text review for a boo
   "review_id": "string",
   "message": "string"
 }
+
+```
+## 7. Acquisition Request / Wishlist (Complex Endpoint)
+Allows a patron to submit a request for a book that is not currently in the library catalog. This endpoint is complex because it performs multiple reads before writing as it verifies the patron exists, checks whether the book already exists in the catalog, checks whether the patron has already submitted a request for this title, and checks whether other patrons have also requested it. Also, the response message adapts based on existing demand for the title.
+
+### 1. `/wishlist/request/` (POST)
+Submit a request for a book not currently in the catalog.
+
+**Request:**
+
+ ```json
+[
+  {
+    "patron_id": "number",
+    "title": "string",
+    "author": "string"
+  }
+]
+```
+**Response:**
+
+ ```json
+[
+  {
+    "success": "boolean",
+    "message": "string",
+    "wishlist_id": "number" 
+  }
+]
+```
+### 2. `/wishlist/` (GET)
+Admin view of all acquisition requests, ordered alphabetically by title.
+
+**Response:**
+
+ ```json
+[
+  {
+    "wishlist_id": "number",
+    "patron_id": "number",
+    "title": "string",
+    "author": "string",
+    "requested_at": "string",
+    "fulfilled": "boolean"
+  }
+]
+
+```
+### 2. `/wishlist/{wishlist_id}/fulfill/` (POST)
+Admin endpoint to mark an acquisition request as fulfilled. Automatically marks all other pending requests for the same title as fulfilled as well.
+
+**Response:**
+
+ ```json
+[
+  {
+    "success": "boolean",
+    "message": "string",
+    "wishlist_id": "number"
+  }
+]
