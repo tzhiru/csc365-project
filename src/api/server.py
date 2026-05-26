@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.api import catalog, admin, checkout, accounts, inventory, wishlist
+from src.api import catalog, admin, checkout, accounts, inventory, wishlist, holds
 from starlette.middleware.cors import CORSMiddleware
 
 description = """
@@ -11,6 +11,7 @@ tags_metadata = [
     {"name": "wishlist", "description": "Request library books."},
     {"name": "admin", "description": "Where you reset the game state."},
     {"name": "checkout", "description": "Check out or return a book."},
+    {"name": "holds", "description": "Request a hold on a book."},
     {"name": "inventory", "description": "Manage library catalog."},
 ]
 
@@ -33,10 +34,11 @@ app.add_middleware(
 
 app.include_router(accounts.router)
 app.include_router(catalog.router)
-app.include_router(wishlist.router)
-app.include_router(admin.router)
 app.include_router(checkout.router)
+app.include_router(holds.router)
+app.include_router(wishlist.router)
 app.include_router(inventory.router)
+app.include_router(admin.router)
 
 
 @app.get("/")
