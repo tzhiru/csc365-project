@@ -100,7 +100,7 @@ def place_hold(book_id: int, request: HoldRequest):
             {
                 "patron_id": request.patron_id,
             },
-        ).fetchone()
+        ).one()
 
         if user_current_holds.total_holds >= 10:
             raise HTTPException(
@@ -120,7 +120,7 @@ def place_hold(book_id: int, request: HoldRequest):
             {
                 "book_id": book_id,
             },
-        ).fetchone()
+        ).one()
 
         book_hold_count = book_current_holds.total_holds
         if book_hold_count >= 5:

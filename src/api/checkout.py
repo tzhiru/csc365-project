@@ -83,8 +83,8 @@ def checkout_book(book_id: int, request: CheckoutRequest):
         ).fetchone()
 
         if hold_check is not None:
-            #holding_users = []
-            #for row in hold_check:
+            # holding_users = []
+            # for row in hold_check:
             #    holding_users.append(row.patron_id)
 
             if request.patron_id != hold_check.patron_id:
