@@ -83,11 +83,11 @@ def checkout_book(book_id: int, request: CheckoutRequest):
         )
 
         if hold_check:
-            # holding_users = []
-            # for row in hold_check:
-            #    holding_users.append(row.patron_id)
+            holding_users = []
+            for row in hold_check:
+                holding_users.append(row.patron_id)
 
-            if request.patron_id != hold_check[0].patron_id:
+            if request.patron_id != holding_users[0]:
                 print(" --- Checkout failed bc hold priority")
                 raise HTTPException(
                     status_code=403,
