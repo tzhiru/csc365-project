@@ -1,6 +1,6 @@
 # API Specification  
 ## 1. Creating a new account  
-### 1. `/accounts/new` (POST)  
+### 1. `/accounts/create` (POST)  
 Creates an account for a new patron and returns the account id to be used for checking out books.  
   
 **Request:**  
@@ -49,11 +49,8 @@ Searches the library catalog via specific parameters. Returns a list of all matc
 ```json
 [
   {
-    "book_id": "number", //optional
-    "name": "string", //optional
+    "title": "string", //optional
     "author": "string", //optional
-    "category": "string", //optional
-    "average_rating": "float", //optional, between 0 and 10
   }
 ]
 ```
@@ -62,15 +59,16 @@ Searches the library catalog via specific parameters. Returns a list of all matc
 [
   {
     "book_id": "number",
-    "name": "string",
-    "author": "string",
-    "description": "string",
-    "category": "string",
-    "quantity_avaliable": "number",
+    "title": "string",
+    "author_first": "string",
+    "author_last": "string",
+    "copies_available": "number",
+    "total_copies": "number",
+    "date_published": "string"
   }
 ]
 ```
-### 3. `/catalog/checkout/{book_id}/` (POST)  
+### 3. `/checkout/{book_id}/` (POST)  
 Checks out the specified copy of a book under the user's account.  
   
 **Request**:  
@@ -90,10 +88,10 @@ Checks out the specified copy of a book under the user's account.
 ```
 ## 3. Returning books  
 Marks a checked out item as returned.
-### 1. `/catalog/return/{book_id}/` (POST) 
+### 1. `/checkout/return/{book_copy_id}/` (POST) 
 Returns the specified book and removes it from the user's list of checked out books
 
-### 2. `/accounts/{account_id}/checkedout/` (GET) 
+### 2. `/admin/accounts/{account_id}/checkouts/` (GET) 
 Displays all books currently checked out under a specific account
 
 **Response:**  
@@ -108,7 +106,7 @@ Displays all books currently checked out under a specific account
 ]
 ```
 ## 4. Editing the library catalog (admin functions)  
-### 1. `/catalog/add/` (POST)
+### 1. `/catalog/add` (POST)
 Adds a new item to the library catalog.
 
 **Request**:
@@ -130,7 +128,7 @@ Adds a new item to the library catalog.
 }
 ```
 
-### 2. `/catalog/remove/{book_id}/` (DELETE)
+### 2. `/inventory/remove_book/{book_id}/` (DELETE)
 Removes a book from the library catalog.
 
 **Response**:  
@@ -143,7 +141,7 @@ Removes a book from the library catalog.
 
 ## 5. Viewing user account information/checked out books (admin functions) 
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
-### 1. `/admin/accounts/` (GET)
+### 1. `/admin/accounts/list` (GET)
 Displays a list of all library patron accounts.
 
 **Response**:  
@@ -173,7 +171,7 @@ Displays detailed information for a specific patron account.
     "phone_number": "string"
  }
 ```
-### 3. `/admin/accounts/{account_id}/checkedout/` (GET)
+### 3. `/admin/accounts/{account_id}/checkouts/` (GET)
  
 **Response**:
  
