@@ -80,14 +80,14 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 """
             ),
             {"book_id": book_id},
-        ).one()
+        )
 
         if hold_check:
             # holding_users = []
             # for row in hold_check:
             #    holding_users.append(row.patron_id)
 
-            if request.patron_id != hold_check.patron_id:
+            if request.patron_id != hold_check[0].patron_id:
                 print(" --- Checkout failed bc hold priority")
                 raise HTTPException(
                     status_code=403,
