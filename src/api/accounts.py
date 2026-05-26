@@ -32,7 +32,6 @@ def get_accounts() -> List[PatronAccount]:
     """
     Retrieves the list of all patron accounts.
     """
-    accountsList: List[PatronAccount] = []
 
     with db.engine.begin() as connection:
         res = connection.execute(
@@ -44,23 +43,22 @@ def get_accounts() -> List[PatronAccount]:
                 """
             )
         )
-        for row in res:
-            accountsList.append(
-                PatronAccount(
-                    patron_id=row.id,
-                    first_name=row.first_name,
-                    last_name=row.last_name,
-                    phone_number=row.phone,
-                    address=row.address,
-                )
+        return [
+            PatronAccount(
+                patron_id=row.id,
+                first_name=row.first_name,
+                last_name=row.last_name,
+                phone_number=row.phone,
+                address=row.address,
             )
-
-    # Put in pages later
-    return accountsList
+            for row in res
+        ]
 
 
 class CreateAccountResponse(BaseModel):
     patron_id: int
+    first_name: str
+    last_name: str
 
 
 @router.post("/create", response_model=CreateAccountResponse)
@@ -87,7 +85,8 @@ def post_new_account(acct: PatronAccountInfo):
             ],
         ).one()
 
-        patron_id = acct_connect.id
-
-        print(f"new account created: {acct} id: {patron_id}")
-        return CreateAccountResponse(patron_id=patron_id)
+        return CreateAccountResponse(
+            patron_id=acct_connect.id,
+            first_name=acct.first_name,
+            last_name=acct.last_name,
+        )
