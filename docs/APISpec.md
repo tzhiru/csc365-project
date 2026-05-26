@@ -74,23 +74,44 @@ Checks out the specified copy of a book under the user's account.
 **Request**:  
 
 ```json
-{
-  "account_id": "string"
-}
+[
+  {
+  "patron_id": "string"
+  }
+]
 ```
 
 **Response**:  
 
 ```json
-{
-    "success": "boolean"
-}
+[
+  {
+  "success": "boolean",
+  "checkout_id": "number",
+  "due_date": "date",
+  "copy_id": "number"
+  }
+]
 ```
 ## 3. Returning books  
 Marks a checked out item as returned.
 ### 1. `/checkout/return/{book_copy_id}/` (POST) 
 Returns the specified book and removes it from the user's list of checked out books
-
+**Request**:  
+```json
+[]
+```
+**Response**:  
+```json
+[
+  {
+  "success": "boolean",
+  "checkout_id": "number",
+  "patron_id": "number",
+  "copy_id": "number
+  }
+]
+```
 ### 2. `/admin/accounts/{account_id}/checkouts/` (GET) 
 Displays all books currently checked out under a specific account
 
@@ -287,3 +308,53 @@ Admin endpoint to mark an acquisition request as fulfilled. Automatically marks 
     "wishlist_id": "number"
   }
 ]
+```
+## 8. Placing a hold (Complex Endpoint)
+### 1. `/holds/{book_id}/` (POST)
+Place a hold on a book that currently has all copies checked out.  
+A single book type can only have 5 active holds at a time. A single user can only have 10 active holds at a time. The hold request will fail if these conditions are not met, or if the targeted book is already avaliable.
+**Request:**
+
+ ```json
+[
+  {
+    "patron_id": "number"
+  }
+]
+```
+**Response:**
+
+ ```json
+[
+  {
+  "success": "boolean",
+  "hold_id": "number",
+  "book_id": "number",
+  "expected_date": "date" //the estimated date the book will be avaliable.
+  }
+]
+```
+### 2. `/checkout/{book_id}` (POST)
+Checkout the book once it is avaliable. If you are the patron who made the hold, the checkout will succeed.
+**Request**:  
+
+```json
+[
+  { 
+  "patron_id": "int"
+  }
+]
+```
+
+**Response**:  
+
+```json
+[
+  {
+  "success": "boolean",
+  "checkout_id": "number",
+  "due_date": "date",
+  "copy_id": "number"
+  }
+]
+```
