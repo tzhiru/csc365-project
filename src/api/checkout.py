@@ -69,6 +69,42 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 status_code=409,
                 detail="No copies of this book are available currently.",
             )
+            
+        hold_check = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT patron_id
+                FROM holds
+                WHERE active = TRUE AND book_id = :book_id
+                ORDER BY creation_date ASC
+                """
+            ),
+            {"book_id": book_id},
+        ).one()
+        
+        if hold_check:
+            #holding_users = []
+            #for row in hold_check:
+            #    holding_users.append(row.patron_id)
+            
+            if request.patron_id != hold_check.patron_id:
+                print(" --- Checkout failed bc hold priority")
+                raise HTTPException(
+                status_code=403,
+                detail="This book copy is being held for another user.",
+            )
+            else:
+                # fulfill hold.
+                get_hold = connection.execute(
+                    sqlalchemy.text(
+                        """
+                        UPDATE holds
+                        SET active = FALSE
+                        WHERE book_id = :book_id AND patron_id = :patron_id AND active = TRUE
+                        """
+                    ),
+                    {"book_id": book_id, "patron_id": request.patron_id},
+                )
 
         # create the checkout record with due date 2 weeks from now
         checkout = connection.execute(

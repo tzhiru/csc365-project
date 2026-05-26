@@ -13,9 +13,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-# holds: id, copy_id, patron_id, active (y/n), expected_date
-
-
 class HoldRequest(BaseModel):
     patron_id: int
 
@@ -190,7 +187,7 @@ class HoldData(BaseModel):
 
 
 @router.get("/view_holds/{book_id}", response_model=List[HoldData])
-def return_book(book_id: int):
+def view_holds(book_id: int):
     """
     Display all active holds for a certain book.
     """
