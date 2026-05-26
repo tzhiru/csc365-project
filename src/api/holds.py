@@ -122,13 +122,37 @@ def place_hold(book_id: int, request: HoldRequest):
                 "book_id": book_id,
             },
         ).one()
-
-        if book_current_holds.total_holds >= 5:
+        
+        book_hold_count = book_current_holds.total_holds
+        if book_hold_count >= 5:
             raise HTTPException(
                 status_code=403,
                 detail="This book already has 5 holds. You can create a hold on this book after preexisting holds are fufilled.",
             )
-
+        
+        # shows expected return dates of copies of the book
+        book_current_checkouts = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT due_date
+                FROM checkouts
+                JOIN book_inventory ON book_inventory_id = book_inventory.id
+                WHERE book_id = :book_id AND returned_at IS NULL
+                ORDER BY checkout_date ASC, checkouts.id ASC
+                """
+            ),
+            {
+                "book_id": book_id,
+            },
+        )
+        
+        due_dates = []
+        for row in book_current_checkouts:
+            due_dates.append(row.due_date)
+            
+        if len(due_dates) > book_hold_count:
+            expect_date = due_dates[book_hold_count]
+        
         # create the hold
         hold = connection.execute(
             sqlalchemy.text(
@@ -156,6 +180,7 @@ def place_hold(book_id: int, request: HoldRequest):
 class HoldData(BaseModel):
     hold_id: int
     patron_id: int
+    creation_date: str
     expected_date: str
 
 
@@ -175,7 +200,7 @@ def return_book(book_id: int):
         res = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT id, patron_id, expected_date
+                SELECT id, patron_id, creation_date, expected_date
                 FROM holds
                 WHERE book_id = :book_id AND active = TRUE
                 ORDER BY id ASC
@@ -185,7 +210,10 @@ def return_book(book_id: int):
         )
         return [
             HoldData(
-                hold_id=row.id, patron_id=row.patron_id, expected_date=row.expected_date
+                hold_id=row.id, 
+                patron_id=row.patron_id, 
+                creation_date=str(row.creation_date)
+                expected_date=str(row.expected_date)
             )
             for row in res
         ]
