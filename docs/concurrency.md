@@ -1,10 +1,10 @@
 # Concurrency Control
 
-Our service needs concurrency control because more than one user can interact with the library system at the same time. For example, two users might try to check out the same book, place holds on the same title, or update the same inventory copy at nearly the same moment.
+Our service needs concurrency control because more than one user can interact with the library system at the same time. For example, two users might try to check out the same book, place holds on the same title, or submit acquisition requests at nearly the same moment.
 
-If we don't protect those transactions, each request might read the database before another request has finished updating it. That can lead to states that shouldn't happen in a library system, like one copy being checked out twice or a hold limit being passed.
+If we don't protect those transactions, each request might read the database before another request has finished updating it. That can lead to states that shouldn't happen in a library system, like one copy being checked out twice, a hold limit being passed, or duplicate acquisition requests being created.
 
-For these cases, our service should use database transactions, `FOR UPDATE` locks when a specific row is being changed, `SERIALIZABLE` isolation for count-based checks, and database constraints for rules that should always be true.
+For these cases, our service should use database transactions, `FOR UPDATE` locks when a specific row is being changed, `SERIALIZABLE` isolation for count-based or existence-based checks, and database constraints for rules that should always be true.
 
 ## Case 1: Two Users Check Out the Same Copy
 
@@ -20,7 +20,7 @@ We should also add a database constraint that prevents one inventory copy from h
 
 ```sql
 CREATE UNIQUE INDEX one_active_checkout_per_copy
-ON checkouts (inventory_id)
+ON checkouts (book_inventory_id)
 WHERE returned_at IS NULL;
 ```
 
@@ -30,7 +30,9 @@ This is the right protection because this is one of the main rules of the librar
 
 Another issue can happen when two users place holds on the same book at the same time.
 
-If the service has a limit on the number of active holds for a book, two transactions could both count the current holds before either one inserts a new hold. For example, if a book already has four active holds and the limit is five, both transactions might read the count as four. Then both transactions insert a new hold, and the book ends up with six active holds.
+The holds endpoint checks whether the book is available, checks whether the patron already has a hold on the book, counts how many active holds the patron has, counts how many active holds the book has, and then inserts the new hold. If two transactions run at the same time, both can read the same old counts before either one inserts a new hold.
+
+For example, if a book already has four active holds and the limit is five, both transactions might read the count as four. Then both transactions insert a new hold, and the book ends up with six active holds.
 
 This is a phantom read because the transaction is checking a group of rows that match a condition. While one transaction is still running, another transaction can insert a new row into that same group.
 
@@ -43,39 +45,35 @@ We should also add a constraint to prevent the same user from placing more than 
 ```sql
 CREATE UNIQUE INDEX one_active_hold_per_patron_book
 ON holds (patron_id, book_id)
-WHERE status = 'active';
+WHERE active = TRUE;
 ```
 
 This works because the duplicate-hold rule can be enforced directly by the database. The serializable transaction protects the hold-limit check, and the unique index protects against duplicate active holds.
 
-## Case 3: Checkout While a Copy Is Removed From Inventory
+## Case 3: Two Requests Submit the Same Wishlist Request
 
-A third issue can happen when a user is checking out a copy while an admin is removing or deactivating that same copy from inventory.
+A third issue can happen when acquisition or wishlist requests are submitted at the same time.
 
-The checkout transaction might read that the copy is active and available. Before the checkout finishes, the admin transaction could mark that copy as inactive. If there's no protection, the checkout transaction could still create a checkout for a copy that should no longer be available.
+The wishlist endpoint checks whether the requested book already exists in the catalog. It also checks whether the same patron already requested the title and counts whether other unfulfilled requests for that title already exist. After those checks, it inserts the new wishlist request.
 
-This is a non-repeatable read or stale read problem because the checkout transaction makes a decision using information that changes before the transaction is finished.
+Without concurrency control, two requests from the same patron for the same title could both check the wishlist table before either one commits. Both transactions could see that the patron doesn't already have an unfulfilled request for that title, and both could insert duplicate wishlist requests.
 
-To prevent this, both checkout and inventory removal should run inside transactions. The inventory copy row should be locked with `FOR UPDATE` before either transaction makes a decision about it.
+This is a phantom read because each transaction checks for rows matching the patron, title, and `fulfilled = FALSE`, but another transaction can insert a matching row before the first transaction finishes.
 
-For checkout, the service should only select active copies and should lock the selected row.
+To prevent this, the wishlist request transaction should use `SERIALIZABLE` isolation. This is appropriate because the endpoint makes decisions based on whether matching rows already exist in the catalog and wishlist tables. If two requests for the same title happen at the same time, serializable isolation lets the database detect that the transactions conflict.
+
+We should also add a database constraint to prevent the same patron from having more than one unfulfilled request for the same title.
 
 ```sql
-SELECT *
-FROM inventory
-WHERE book_id = :book_id
-  AND is_active = true
-FOR UPDATE;
+CREATE UNIQUE INDEX one_unfulfilled_wishlist_request_per_patron_title
+ON wishlist (patron_id, title)
+WHERE fulfilled = FALSE;
 ```
 
-For inventory removal, the service should also lock the inventory row before changing it. It should check whether that copy currently has an active checkout before marking it inactive.
-
-If the copy is already checked out, the service should either reject the removal or mark the copy to be removed after it's returned. This prevents the database from ending up with an inactive copy that still has an active checkout.
-
-This is the right approach because both transactions are trying to make decisions about the same physical copy. A row-level lock is useful here because the conflict is centered on one specific inventory row.
+This is the right protection because wishlist requests use a check-then-insert pattern. The application checks whether something exists, then inserts if it doesn't. Without isolation or a constraint, two transactions can both pass the check and insert duplicate rows.
 
 ## Summary
 
-The service should use transactions for checkout, hold creation, return, and inventory removal. It should use `FOR UPDATE` when a transaction is making a decision about a specific inventory copy. It should use `SERIALIZABLE` isolation for transactions that depend on counts or availability checks, especially hold creation and checkout.
+The service should use transactions for checkout, hold creation, return, and wishlist requests. It should use `FOR UPDATE` when a transaction is making a decision about a specific inventory copy. It should use `SERIALIZABLE` isolation for transactions that depend on counts or existence checks, especially hold creation and wishlist requests.
 
 These protections are needed because several parts of the service can read the same old database state and then write results that break the rules of the library system.
