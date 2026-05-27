@@ -30,7 +30,7 @@ This is the right protection because this is one of the main rules of the librar
 
 Another issue can happen when two users place holds on the same book at the same time.
 
-The holds endpoint checks whether the book is available, checks whether the patron already has a hold on the book, counts how many active holds the patron has, counts how many active holds the book has, and then inserts the new hold. If two transactions run at the same time, both can read the same old counts before either one inserts a new hold.
+The holds endpoint checks whether the patron exists, checks whether the book can be placed on hold, checks how many active holds the patron has, checks how many active holds the book has, and then inserts the new hold. If two transactions run at the same time, both can read the same old counts before either one inserts a new hold.
 
 For example, if a book already has four active holds and the limit is five, both transactions might read the count as four. Then both transactions insert a new hold, and the book ends up with six active holds.
 
@@ -50,19 +50,29 @@ WHERE active = TRUE;
 
 This works because the duplicate-hold rule can be enforced directly by the database. The serializable transaction protects the hold-limit check, and the unique index protects against duplicate active holds.
 
-## Case 3: Two Requests Submit the Same Wishlist Request
+## Case 3: Two Users Submit the Same Acquisition Request
 
 A third issue can happen when acquisition or wishlist requests are submitted at the same time.
 
-The wishlist endpoint checks whether the requested book already exists in the catalog. It also checks whether the same patron already requested the title and counts whether other unfulfilled requests for that title already exist. After those checks, it inserts the new wishlist request.
+The wishlist endpoint checks whether the patron exists and whether the requested book already exists in the catalog. It also checks for duplicate wishlist requests before inserting the new acquisition request into the wishlist table.
 
-Without concurrency control, two requests from the same patron for the same title could both check the wishlist table before either one commits. Both transactions could see that the patron doesn't already have an unfulfilled request for that title, and both could insert duplicate wishlist requests.
+Without concurrency control, two transactions could both check the catalog and wishlist table before either one commits. Both transactions could see that the book doesn't exist in the catalog and that there isn't already a duplicate unfulfilled request. Then both transactions could insert the same acquisition request into the wishlist table.
 
-This is a phantom read because each transaction checks for rows matching the patron, title, and `fulfilled = FALSE`, but another transaction can insert a matching row before the first transaction finishes.
+This is a phantom read because each transaction checks for rows matching the requested title and `fulfilled = FALSE`, but another transaction can insert a matching row before the first transaction finishes.
 
 To prevent this, the wishlist request transaction should use `SERIALIZABLE` isolation. This is appropriate because the endpoint makes decisions based on whether matching rows already exist in the catalog and wishlist tables. If two requests for the same title happen at the same time, serializable isolation lets the database detect that the transactions conflict.
 
-We should also add a database constraint to prevent the same patron from having more than one unfulfilled request for the same title.
+We should also add a database constraint to prevent duplicate unfulfilled acquisition requests for the same title.
+
+```sql
+CREATE UNIQUE INDEX one_unfulfilled_wishlist_request_per_title
+ON wishlist (title)
+WHERE fulfilled = FALSE;
+```
+
+This is the right protection if the service only wants one active acquisition request per title. It matches the issue shown in the sequence diagram because the problem is that duplicate requests are not detected while the transactions are running concurrently.
+
+If the service instead wants to allow multiple patrons to request the same title but prevent the same patron from submitting the same request twice, then the constraint should include `patron_id` too.
 
 ```sql
 CREATE UNIQUE INDEX one_unfulfilled_wishlist_request_per_patron_title
@@ -70,7 +80,7 @@ ON wishlist (patron_id, title)
 WHERE fulfilled = FALSE;
 ```
 
-This is the right protection because wishlist requests use a check-then-insert pattern. The application checks whether something exists, then inserts if it doesn't. Without isolation or a constraint, two transactions can both pass the check and insert duplicate rows.
+Either way, wishlist requests need protection because they use a check-then-insert pattern. The application checks whether something exists, then inserts if it doesn't. Without isolation or a constraint, two transactions can both pass the check and insert duplicate rows.
 
 ## Summary
 
