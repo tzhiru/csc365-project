@@ -59,6 +59,7 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                         WHERE returned_at IS NULL
                     )
                 LIMIT 1
+                FOR UPDATE SKIP LOCKED
                 """
             ),
             {"book_id": book_id},
