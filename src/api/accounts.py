@@ -121,6 +121,6 @@ def post_new_account(acct: PatronAccountInfo):
             patron_id=acct_connect.id,
             first_name=acct.first_name,
             last_name=acct.last_name,
-            phone_number=acct.number,
+            phone_number=acct.phone_number,
             address=acct.address,
         )

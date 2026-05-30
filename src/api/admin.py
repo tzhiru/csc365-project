@@ -96,7 +96,7 @@ def get_patron_account(account_id: int) -> AccountItem:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
         return AccountItem(
-            account_id=row.id,
+            patron_id=row.id,
             first_name=row.first_name,
             last_name=row.last_name,
             phone_number=row.phone,
