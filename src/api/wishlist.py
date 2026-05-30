@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import sqlalchemy
 from src.api import auth
 from src import database as db
@@ -33,6 +33,12 @@ class WishlistItem(BaseModel):
     author: str | None
     requested_at: str
     fulfilled: bool
+
+
+class PageResponse(BaseModel):
+    previous: Optional[str] = None
+    next: Optional[str] = None
+    results: List[WishlistItem]
 
 
 @router.post("/request/", response_model=AcquisitionResponse)
@@ -136,12 +142,21 @@ def request_acquisition(request: AcquisitionRequest):
     )
 
 
-@router.get("/", response_model=List[WishlistItem])
-def get_wishlist():
+@router.get("/", response_model=PageResponse)
+def get_wishlist(search_page: str = ""):
     """
     Admin view of all pending acquisition requests in the wishlist ordered alpabetically by title.
     """
+    items: List[WishlistItem] = []
+    nextpage = False
+    limit = 20  # amount of results per page
+    if search_page != "":
+        pageno = int(search_page)
+    else:
+        pageno = 1
+    offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
+        i = 0
         rows = connection.execute(
             sqlalchemy.text(
                 """
@@ -149,21 +164,37 @@ def get_wishlist():
                 FROM wishlist
                 WHERE fulfilled = FALSE
                 ORDER BY title ASC
+                OFFSET :offset
                 """
-            )
+            ),
+            [{"offset": offset}],
         )
-
-        return [
-            WishlistItem(
-                wishlist_id=row.id,
-                patron_id=row.patron_id,
-                title=row.title,
-                author=row.author,
-                requested_at=str(row.requested_at),
-                fulfilled=row.fulfilled,
+        for row in rows:
+            if i == limit:
+                nextpage = True
+                break
+            items.append(
+                WishlistItem(
+                    wishlist_id=row.id,
+                    patron_id=row.patron_id,
+                    title=row.title,
+                    author=row.author,
+                    requested_at=str(row.requested_at),
+                    fulfilled=row.fulfilled,
+                )
             )
-            for row in rows
-        ]
+            i += 1
+    if pageno <= 1:
+        previous = None
+    else:
+        previous = str(pageno - 1)
+
+    if nextpage:
+        next = str(pageno + 1)
+    else:
+        next = None
+
+    return PageResponse(previous=previous, next=next, results=items)
 
 
 @router.post("/{wishlist_id}/fulfill/", response_model=AcquisitionResponse)
