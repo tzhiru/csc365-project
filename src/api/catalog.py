@@ -22,60 +22,102 @@ class CatalogItem(BaseModel):
     date_published: str
 
 
-class AvailableBook(BaseModel):
-    book_id: int
-    title: str
-    author_first: str
-    author_last: str
-    copies_available: int
-    date_published: str
+class PageResponse(BaseModel):
+    previous: Optional[str] = None
+    next: Optional[str] = None
+    results: List[CatalogItem]
 
 
-@router.get("/available/", response_model=List[AvailableBook])
-def get_available_books() -> List[AvailableBook]:
+@router.get("/available/", response_model=PageResponse)
+def get_available_books(search_page: str = ""):
     """
     Retrieves a list of available book copies in the inventory.
     """
+    items: List[CatalogItem] = []
+    nextpage = False
+    limit = 20  # amount of results per page
+    if search_page != "":
+        pageno = int(search_page)
+    else:
+        pageno = 1
+    offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
+        i = 0
         books = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                books.date_published, COUNT(bi.id) AS copies_available
-                FROM books
-                JOIN authors ON books.author_id = authors.id
-                JOIN book_inventory bi ON bi.book_id = books.id
-                WHERE bi.active = TRUE AND bi.id NOT IN (
-                    SELECT book_inventory_id
-                    FROM checkouts
-                    WHERE returned_at IS NULL)
-                GROUP BY books.id, books.title, authors.first_name, authors.last_name, books.date_published
-                HAVING COUNT(bi.id) > 0
-                ORDER BY books.title ASC
+                WITH checked (book_id, total) AS (
+                    SELECT book_id, 
+                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
+                    FROM book_inventory
+                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
+                    GROUP BY book_id
+                    ORDER BY book_id
+                ),
+                data as (
+                    SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
+                    date_published, count(*) as total_copies, count(*) - checked.total as copies_available
+                    FROM book_inventory
+                    JOIN books on book_inventory.book_id = books.id
+                    JOIN authors on books.author_id = authors.id
+                    JOIN checked on books.id = checked.book_id
+                    WHERE active = true
+                    GROUP BY books.id, authors.id, checked.total
+                    ORDER BY books.title asc
+                )
+                SELECT id, title, f, l, date_published, total_copies, copies_available
+                FROM data
+                WHERE copies_available > 0    
+                OFFSET :offset
                 """
-            )
+            ),
+            [{"offset": offset}],
         )
-
-        return [
-            AvailableBook(
-                book_id=bk.id,
-                title=bk.title,
-                author_first=bk.f,
-                author_last=bk.l,
-                date_published=str(bk.date_published),
-                copies_available=bk.copies_available,
+        for bk in books:
+            if i == limit:
+                nextpage = True
+                break
+            items.append(
+                CatalogItem(
+                    book_id=bk.id,
+                    title=bk.title,
+                    author_first=bk.f,
+                    author_last=bk.l,
+                    copies_available=bk.copies_available,
+                    total_copies=bk.total_copies,
+                    date_published=str(bk.date_published),
+                )
             )
-            for bk in books
-        ]
+            i += 1
+
+    if pageno <= 1:
+        previous = None
+    else:
+        previous = str(pageno - 1)
+
+    if nextpage:
+        next = str(pageno + 1)
+    else:
+        next = None
+
+    return PageResponse(previous=previous, next=next, results=items)
 
 
-@router.get("/full_catalog/", tags=["catalog"], response_model=List[CatalogItem])
-def get_books() -> List[CatalogItem]:
+@router.get("/full_catalog/", tags=["catalog"], response_model=PageResponse)
+def get_books(search_page: str = ""):
     """
     Show all books, total copies, and currently avaliable copies.
     """
-
+    items: List[CatalogItem] = []
+    nextpage = False
+    limit = 20  # amount of results per page
+    if search_page != "":
+        pageno = int(search_page)
+    else:
+        pageno = 1
+    offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
+        i = 0
         books = connection.execute(
             sqlalchemy.text(
                 """
@@ -96,35 +138,63 @@ def get_books() -> List[CatalogItem]:
                 WHERE active = TRUE
                 GROUP BY books.id, authors.id, checked.total
                 ORDER BY books.title ASC
+                OFFSET :offset
                 """
-            )
+            ),
+            [{"offset": offset}],
         )
-        return [
-            CatalogItem(
-                book_id=bk.id,
-                title=bk.title,
-                author_first=bk.f,
-                author_last=bk.l,
-                copies_available=bk.copies_available,
-                total_copies=bk.total_copies,
-                date_published=str(bk.date_published),
+        for bk in books:
+            if i == limit:
+                nextpage = True
+                break
+            items.append(
+                CatalogItem(
+                    book_id=bk.id,
+                    title=bk.title,
+                    author_first=bk.f,
+                    author_last=bk.l,
+                    copies_available=bk.copies_available,
+                    total_copies=bk.total_copies,
+                    date_published=str(bk.date_published),
+                )
             )
-            for bk in books
-        ]
+            i += 1
+
+    if pageno <= 1:
+        previous = None
+    else:
+        previous = str(pageno - 1)
+
+    if nextpage:
+        next = str(pageno + 1)
+    else:
+        next = None
+
+    return PageResponse(previous=previous, next=next, results=items)
 
 
-@router.get("/search/", response_model=List[CatalogItem])
+@router.get("/search/", response_model=PageResponse, tags=["catalog"])
 def search_catalog(
-    title: Optional[str] = None,
-    author: Optional[str] = None,
-) -> List[CatalogItem]:
+    title: str = "",
+    author: str = "",
+    search_page: str = "",
+):
     """
     Search the catalog by title and/or author name.
     Returns all matching books with how many active copies are currently available.
     """
-    results: List[CatalogItem] = []
+
+    items: List[CatalogItem] = []
+    nextpage = False
+    limit = 20  # amount of results per page
+    if search_page != "":
+        pageno = int(search_page)
+    else:
+        pageno = 1
+    offset = (pageno - 1) * limit
 
     with db.engine.begin() as connection:
+        i = 0
         books = connection.execute(
             sqlalchemy.text(
                 """
@@ -146,22 +216,36 @@ def search_catalog(
                 AND (books.title = :title OR (authors.first_name = :author OR authors.last_name = :author))
                 GROUP BY books.id, authors.id, checked.total
                 ORDER BY books.title ASC
+                OFFSET :offset
                 """
             ),
-            {"title": title, "author": author},
+            {"title": title, "author": author, "offset": offset},
         )
-
         for bk in books:
-            results.append(
+            if i == limit:
+                nextpage = True
+                break
+            items.append(
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
                     author_first=bk.f,
                     author_last=bk.l,
-                    date_published=str(bk.date_published),
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
+                    date_published=str(bk.date_published),
                 )
             )
+            i += 1
 
-    return results
+    if pageno <= 1:
+        previous = None
+    else:
+        previous = str(pageno - 1)
+
+    if nextpage:
+        next = str(pageno + 1)
+    else:
+        next = None
+
+    return PageResponse(previous=previous, next=next, results=items)

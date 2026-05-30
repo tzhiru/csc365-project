@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import sqlalchemy
 from src.api import auth
 from src import database as db
@@ -12,14 +12,6 @@ router = APIRouter(
 )
 
 
-class PatronAccount(BaseModel):
-    patron_id: int
-    first_name: str
-    last_name: str
-    phone_number: str
-    address: str
-
-
 class PatronAccountInfo(BaseModel):
     first_name: str
     last_name: str
@@ -27,32 +19,74 @@ class PatronAccountInfo(BaseModel):
     address: str
 
 
-@router.get("/list/", tags=["accounts"], response_model=List[PatronAccount])
-def get_accounts() -> List[PatronAccount]:
+class AccountItem(BaseModel):
+    line_item_id: int
+    patron_id: int
+    first_name: str
+    last_name: str
+    phone_number: str
+    address: str
+
+
+class AcctResponse(BaseModel):
+    previous: Optional[str] = None
+    next: Optional[str] = None
+    results: List[AccountItem]
+
+
+@router.get("/list/", tags=["accounts"], response_model=AcctResponse)
+def get_accounts(search_page: str = "") -> AcctResponse:
     """
     Retrieves the list of all patron accounts.
     """
-
+    items: List[AccountItem] = []
+    nextpage = False
+    limit = 20  # amount of results per page
+    if search_page != "":
+        pageno = int(search_page)
+    else:
+        pageno = 1
+    offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
-        res = connection.execute(
+        i = 0
+        result = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT *
                 FROM patron_accounts
                 ORDER BY last_name DESC
+                OFFSET :offset
                 """
-            )
+            ),
+            [{"offset": offset}],
         )
-        return [
-            PatronAccount(
-                patron_id=row.id,
-                first_name=row.first_name,
-                last_name=row.last_name,
-                phone_number=row.phone,
-                address=row.address,
+        for row in result:
+            if i == limit:
+                nextpage = True
+                break
+            items.append(
+                AccountItem(
+                    line_item_id=i,
+                    patron_id=row.id,
+                    first_name=row.first_name,
+                    last_name=row.last_name,
+                    phone_number=row.phone,
+                    address=row.address,
+                )
             )
-            for row in res
-        ]
+            i += 1
+
+    if pageno <= 1:
+        previous = None
+    else:
+        previous = str(pageno - 1)
+
+    if nextpage:
+        next = str(pageno + 1)
+    else:
+        next = None
+
+    return AcctResponse(previous=previous, next=next, results=items)
 
 
 class CreateAccountResponse(BaseModel):
