@@ -20,7 +20,6 @@ class PatronAccountInfo(BaseModel):
 
 
 class AccountItem(BaseModel):
-    line_item_id: int
     patron_id: int
     first_name: str
     last_name: str
@@ -49,7 +48,7 @@ def get_accounts(search_page: str = "") -> AcctResponse:
     offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
         i = 0
-        result = connection.execute(
+        account_results = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT *
@@ -60,13 +59,12 @@ def get_accounts(search_page: str = "") -> AcctResponse:
             ),
             [{"offset": offset}],
         )
-        for row in result:
+        for row in account_results:
             if i == limit:
                 nextpage = True
                 break
             items.append(
                 AccountItem(
-                    line_item_id=i,
                     patron_id=row.id,
                     first_name=row.first_name,
                     last_name=row.last_name,
@@ -119,8 +117,10 @@ def post_new_account(acct: PatronAccountInfo):
             ],
         ).one()
 
-        return CreateAccountResponse(
+        return AccountItem(
             patron_id=acct_connect.id,
             first_name=acct.first_name,
             last_name=acct.last_name,
+            phone_number=acct.number,
+            address=acct.address,
         )

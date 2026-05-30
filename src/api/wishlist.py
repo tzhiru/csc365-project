@@ -157,7 +157,7 @@ def get_wishlist(search_page: str = ""):
     offset = (pageno - 1) * limit
     with db.engine.begin() as connection:
         i = 0
-        rows = connection.execute(
+        wishlist_results = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT id, patron_id, title, author, requested_at, fulfilled
@@ -169,7 +169,7 @@ def get_wishlist(search_page: str = ""):
             ),
             [{"offset": offset}],
         )
-        for row in rows:
+        for row in wishlist_results:
             if i == limit:
                 nextpage = True
                 break
