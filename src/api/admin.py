@@ -121,7 +121,8 @@ def reset():
             sqlalchemy.text(
                 """
                 TRUNCATE TABLE 
-                books, book_inventory,
+                holds, checkouts, wishlist,
+                book_inventory, books,
                 authors, publishers,
                 patron_accounts
                 RESTART IDENTITY
