@@ -67,4 +67,40 @@ This has not been added, since determining the status of a checkout is based on 
 This has been added.  
   
 12. I would added comments throughout the code that explains in full detail what ever file does so that its very clear what is suppose to happen
+
+### Schema/API design
+1. I would add a DELETE call for the account sections, it might be useful for any user who stops using your service or something like that
   
+We don't want to remove an already existing user, because the library keeps records of past checkouts and those records need to refer back to the users that completed those checkouts.  
+  
+2. For the GET api call for the account section, I recommend also making phone number unique and checking to see no person has the same number because that might get confusing  
+  
+
+  
+3. For catalog API, I would add an API that allows you to see which books are checkout, so you guys can keep track of that
+
+4. For catalog API, I would also add a POST call to allow you to put puts into the catalog, this is separate from the inventory, so you can choose which books to offer to certain people. Like in the potion shop where certain customers have different taste
+
+5. catalog API for scearch should also call on an specific id, in case there are multiple books with the same title and author  
+  
+When there are multiple books with the same attributes, they will both be returned by the search.
+  
+6. For catalog API, I would also add a DELETE call to allow you to delete any books that you no longer want the catalog  
+  
+The inventory functions allow us to delete book types and book copies from the catalog.  
+  
+7. For admin API, I would recommend leaving as just admin rest and move the other API calls to other sections that way admin only deals with rest and it not conflicting with other databases
+
+8. For inventory API, you can also add a section to find a certain book or sections of books. This can help you get specifics on books to potentially help the customer better
+
+9. I am not sure what the point of remove book copy is for, if you have multiple of the same book, just add a qty column to your book section and update that rather than create another whole entry  
+  
+There are seperate tables for books and their individual copies (instead of just a quantity value), because we have to keep track of individual copies. It's a library, so we have to know what copies are with which users. If a specific copy is damaged, then you remove that specific copy and not the entire type of book.  
+  
+10. For inventory API, I would add a POST function to add books to your inventory, it might be easier this way
+
+11. For inventory API,I would add a Get function to get either certain books from your inventory or all books, it might be easier this way4. Over all, everything seems good expect there is not much API calls for the books, I recommend you add some because it might help simplify the project and not have a bunch of for loops everywhere to try to find books
+
+12. Not sure the purpose of default API call, I would remove it if I where you
+      
+This is the default call of the app and shows that the app is online. There is no need to remove it. 
