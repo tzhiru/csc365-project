@@ -55,8 +55,8 @@ def get_available_books(search_page: str = ""):
                     ORDER BY book_id
                 ),
                 data as (
-                    SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                    date_published, count(*) as total_copies, count(*) - checked.total as copies_available
+                    SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
+                    date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
                     FROM book_inventory
                     JOIN books on book_inventory.book_id = books.id
                     JOIN authors on books.author_id = authors.id
@@ -65,7 +65,7 @@ def get_available_books(search_page: str = ""):
                     GROUP BY books.id, authors.id, checked.total
                     ORDER BY books.title asc
                 )
-                SELECT id, title, f, l, date_published, total_copies, copies_available
+                SELECT id, title, first, last, date_published, total_copies, copies_available
                 FROM data
                 WHERE copies_available > 0    
                 OFFSET :offset
@@ -81,8 +81,8 @@ def get_available_books(search_page: str = ""):
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.f,
-                    author_last=bk.l,
+                    author_first=bk.first,
+                    author_last=bk.last,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
@@ -129,8 +129,8 @@ def get_books(search_page: str = ""):
                     GROUP BY book_id
                     ORDER BY book_id
                 )
-                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                date_published, count(*) as total_copies, count(*) - checked.total as copies_available
+                SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
+                date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
                 FROM book_inventory
                 JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
@@ -151,8 +151,8 @@ def get_books(search_page: str = ""):
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.f,
-                    author_last=bk.l,
+                    author_first=bk.first,
+                    author_last=bk.last,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
@@ -206,8 +206,8 @@ def search_catalog(
                     GROUP BY book_id
                     ORDER BY book_id
                 )
-                SELECT books.id, books.title, authors.first_name as f, authors.last_name as l,
-                date_published, count(*) as total_copies, count(*) - checked.total as copies_available
+                SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
+                date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
                 FROM book_inventory
                 JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
@@ -229,8 +229,8 @@ def search_catalog(
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.f,
-                    author_last=bk.l,
+                    author_first=bk.first,
+                    author_last=bk.last,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),

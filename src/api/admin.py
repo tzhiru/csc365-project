@@ -4,20 +4,13 @@ from typing import List
 import sqlalchemy
 from src.api import auth
 from src import database as db
+from .accounts import AccountItem
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
     dependencies=[Depends(auth.get_api_key)],
 )
-
-
-class PatronAccount(BaseModel):
-    account_id: int
-    first_name: str
-    last_name: str
-    phone_number: str
-    address: str
 
 
 class CheckedOutBook(BaseModel):
@@ -49,7 +42,7 @@ def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
         # Get checkouts
-        results = connection.execute(
+        checkout_results = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT c.id as checkout_id, b.id as book_id, b.title, a.first_name as author_first, a.last_name as author_last,
@@ -65,7 +58,7 @@ def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
             {"account_id": account_id},
         )
 
-        for row in results:
+        for row in checkout_results:
             checkouts.append(
                 CheckedOutBook(
                     checkout_id=row.checkout_id,
@@ -82,8 +75,8 @@ def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
     return checkouts
 
 
-@router.get("/accounts/{account_id}", response_model=PatronAccount)
-def get_patron_account(account_id: int) -> PatronAccount:
+@router.get("/accounts/{account_id}", response_model=AccountItem)
+def get_patron_account(account_id: int) -> AccountItem:
     """
     Retrieve a specific patron account by ID.
     """
@@ -102,7 +95,7 @@ def get_patron_account(account_id: int) -> PatronAccount:
         if not row:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
-        return PatronAccount(
+        return AccountItem(
             account_id=row.id,
             first_name=row.first_name,
             last_name=row.last_name,
