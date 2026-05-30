@@ -2,8 +2,6 @@ import sqlalchemy
 import os
 import dotenv
 from faker import Faker
-
-# import numpy as np
 import random
 
 
@@ -17,8 +15,10 @@ def database_connection_url():
     return f"postgresql://{DB_USER}:{DB_PASSWD}@{DB_SERVER}:{DB_PORT}/{DB_NAME}"
 
 
+url = "postgresql://myuser:mypassword@localhost:5432/mydatabase"
+
 # Create a new DB engine based on our connection string
-engine = sqlalchemy.create_engine(database_connection_url(), use_insertmanyvalues=True)
+engine = sqlalchemy.create_engine(url, use_insertmanyvalues=True)
 
 num_users = 200000
 num_books = 200000
@@ -26,36 +26,31 @@ fake = Faker()
 copies = []
 total_copies = 0
 
+with engine.begin() as conn:
+    print("Truncating tables...")
+    conn.execute(
+        sqlalchemy.text(
+            """
+                TRUNCATE TABLE 
+                holds, checkouts, wishlist,
+                book_inventory, books,
+                authors, publishers,
+                patron_accounts
+                RESTART IDENTITY
+            """
+        )
+    )
+
 # create fake posters with fake names and birthdays
 with engine.begin() as conn:
-    print("creating fake accounts...")
-    for i in range(num_users):
-        if i % 10 == 0:
-            print(i)
-
-        # profile = fake.profile()
-        first_name = fake.unique.first_name()
-        last_name = fake.unique.last_name()
-        number = fake.unique.phone_number()
-        address = fake.unique.address()
-
-        poster_id = conn.execute(
-            sqlalchemy.text("""
-                INSERT INTO patron_accounts (first_name, last_name, phone, address) 
-                VALUES (:first, :last, :phone, :add) 
-                RETURNING id;
-                """),
-            {"first": first_name, "last": last_name, "phone": number, "add": address},
-        ).scalar_one()
-
     print("creating fake authors and publishers...")
     for i in range(10000):
         if i % 10 == 0:
-            print(i)
+            print(f"authors --- {i}")
 
-        first_name = fake.unique.first_name()
-        last_name = fake.unique.last_name()
-        place_name = fake.book.publisher()
+        first_name = fake.first_name()
+        last_name = fake.last_name()
+        place_name = fake.company()
 
         conn.execute(
             sqlalchemy.text("""
@@ -67,12 +62,13 @@ with engine.begin() as conn:
             {"first": first_name, "last": last_name, "place": place_name},
         )
 
+with engine.begin() as conn:
     print("creating fake books...")
     for i in range(num_books):
         if i % 10 == 0:
-            print(i)
+            print(f"books --- {i}")
 
-        title = fake.book.title()
+        title = fake.catch_phrase()
         day = fake.date_between(start_date="-100y")
         author = random.randint(1, 10000)
         pub = random.randint(1, 10000)
@@ -104,5 +100,25 @@ with engine.begin() as conn:
         """),
             copies,
         )
-
 print(f"total copies: {total_copies}")
+
+with engine.begin() as conn:
+    print("creating fake accounts...")
+    for i in range(num_users):
+        if i % 10 == 0:
+            print(f"accounts --- {i}")
+
+        # profile = fake.profile()
+        first_name = fake.first_name()
+        last_name = fake.last_name()
+        number = fake.phone_number()
+        address = fake.address()
+
+        poster_id = conn.execute(
+            sqlalchemy.text("""
+                INSERT INTO patron_accounts (first_name, last_name, phone, address) 
+                VALUES (:first, :last, :phone, :add) 
+                RETURNING id;
+                """),
+            {"first": first_name, "last": last_name, "phone": number, "add": address},
+        ).scalar_one()
