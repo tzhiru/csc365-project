@@ -11,11 +11,11 @@ This script creates:
 
 This ended up being more than a million (whoops). This ratio seemed realistic enough, as there should be much more book types than patrons who have an account, and in a library there is usually multiple copies of different books.
 ## Performance results  
-**GET `/accounts/list/`** 782.484 ms  
+**GET `/accounts/list/`** 26.302 ms  
 **POST `/accounts/create/`** 12.399 ms  
   
-**GET `/catalog/available/`** 1473.756 ms (Slowest endpoint)  
-**GET `/catalog/full_catalog/`** 1414.518 ms  
+**GET `/catalog/available/`** 702.569 ms  
+**GET `/catalog/full_catalog/`** 748.483 ms (Longest endpoint)  
 **GET `/catalog/search/`** 368.113 ms  
   
 **POST `/wishlist/request/`** 23.308 ms  
