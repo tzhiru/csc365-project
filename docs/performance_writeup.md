@@ -32,6 +32,6 @@ This ended up being more than a million (whoops). This ratio seemed realistic en
 **POST `/holds/{book_id}/`** 57.132 ms  
 **GET `/holds/view_holds/{book_id}`** 31.843 ms  
 
-**POST `/inventory/remove_book/{book_id}`**  
+**POST `/inventory/remove_book/{book_id}`** 135.799 ms  
 **POST `/inventory/remove_book_copy/{book_copy_id}`** 41.792 ms  
 ## Performance tuning
