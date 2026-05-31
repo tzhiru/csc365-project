@@ -134,4 +134,75 @@ JIT:
   Timing: Generation 1.437 ms (Deform 0.510 ms), Inlining 0.000 ms, Optimization 1.048 ms, Emission 13.811 ms, Total 16.296 ms
 Execution Time: 854.590 ms
 ```
-The plan uses a sequential scan once on checkouts and twice on book_inventory.
+The plan uses a sequential scan once on checkouts and twice on book_inventory. Checkouts is currently less than a page long, so creating an index for it won't change the results. Creating an index on book_inventory improved the speed a tiny amount.
+```
+CREATE INDEX book_inv ON book_inventory (book_id)
+```
+```
+Limit  (cost=195190.06..195190.11 rows=21 width=84) (actual time=762.191..762.198 rows=21.00 loops=1)
+  Buffers: shared hit=44009, temp read=1826 written=2944
+  ->  Sort  (cost=195190.06..196692.92 rows=601147 width=84) (actual time=752.358..752.363 rows=21.00 loops=1)
+        Sort Key: books.title
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=44009, temp read=1826 written=2944
+        ->  GroupAggregate  (cost=98545.16..178982.18 rows=601147 width=84) (actual time=270.757..714.900 rows=199194.00 loops=1)
+              Group Key: books.id, authors.id, (sum(CASE WHEN ((checkouts.checkout_date IS NOT NULL) AND (checkouts.returned_at IS NULL)) THEN 1 ELSE 0 END))
+              Buffers: shared hit=44009, temp read=1826 written=2944
+              ->  Incremental Sort  (cost=98545.16..165456.37 rows=601147 width=68) (actual time=270.742..643.099 rows=599450.00 loops=1)
+                    Sort Key: books.id, authors.id, (sum(CASE WHEN ((checkouts.checkout_date IS NOT NULL) AND (checkouts.returned_at IS NULL)) THEN 1 ELSE 0 END))
+                    Presorted Key: books.id
+                    Full-sort Groups: 18096  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                    Buffers: shared hit=44009, temp read=1826 written=2944
+                    ->  Merge Join  (cost=98544.88..149173.01 rows=601147 width=68) (actual time=270.672..531.139 rows=599450.00 loops=1)
+                          Merge Cond: (books.id = book_inventory.book_id)
+                          Buffers: shared hit=44009, temp read=1826 written=2944
+                          ->  Merge Join  (cost=98543.50..119325.79 rows=200000 width=72) (actual time=270.641..403.304 rows=200000.00 loops=1)
+                                Merge Cond: (books.id = book_inventory_1.book_id)
+                                Buffers: shared hit=37707, temp read=1826 written=2944
+                                ->  Nested Loop  (cost=0.72..15239.58 rows=200000 width=60) (actual time=0.087..88.152 rows=200000.00 loops=1)
+                                      Buffers: shared hit=32610
+                                      ->  Index Scan using books_pkey on books  (cost=0.42..7225.74 rows=200000 width=46) (actual time=0.024..16.796 rows=200000.00 loops=1)
+                                            Index Searches: 1
+                                            Buffers: shared hit=2610
+                                      ->  Memoize  (cost=0.30..0.31 rows=1 width=18) (actual time=0.000..0.000 rows=1.00 loops=200000)
+                                            Cache Key: books.author_id
+                                            Cache Mode: logical
+                                            Hits: 190000  Misses: 10000  Evictions: 0  Overflows: 0  Memory Usage: 1168kB
+                                            Buffers: shared hit=30000
+                                            ->  Index Scan using authors_pkey on authors  (cost=0.29..0.30 rows=1 width=18) (actual time=0.001..0.001 rows=1.00 loops=10000)
+                                                  Index Cond: (id = books.author_id)
+                                                  Index Searches: 10000
+                                                  Buffers: shared hit=30000
+                                ->  Sort  (cost=98542.78..99050.02 rows=202895 width=12) (actual time=270.512..283.887 rows=200000.00 loops=1)
+                                      Sort Key: book_inventory_1.book_id
+                                      Sort Method: external merge  Disk: 5096kB
+                                      Buffers: shared hit=5097, temp read=1826 written=2944
+                                      ->  HashAggregate  (cost=67347.26..77188.71 rows=202895 width=12) (actual time=177.028..232.164 rows=200000.00 loops=1)
+                                            Group Key: book_inventory_1.book_id
+                                            Planned Partitions: 4  Batches: 5  Memory Usage: 8249kB  Disk Usage: 11392kB
+                                            Buffers: shared hit=5097, temp read=1189 written=2305
+                                            ->  Hash Left Join  (cost=1.18..16097.26 rows=800000 width=12) (actual time=0.051..84.469 rows=800001.00 loops=1)
+                                                  Hash Cond: (book_inventory_1.id = checkouts.book_inventory_id)
+                                                  Buffers: shared hit=5097
+                                                  ->  Seq Scan on book_inventory book_inventory_1  (cost=0.00..13096.00 rows=800000 width=8) (actual time=0.018..33.010 rows=800000.00 loops=1)
+                                                        Buffers: shared hit=5096
+                                                  ->  Hash  (cost=1.08..1.08 rows=8 width=12) (actual time=0.024..0.025 rows=8.00 loops=1)
+                                                        Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                        Buffers: shared hit=1
+                                                        ->  Seq Scan on checkouts  (cost=0.00..1.08 rows=8 width=12) (actual time=0.016..0.018 rows=8.00 loops=1)
+                                                              Buffers: shared hit=1
+                          ->  Index Scan using book_inv on book_inventory  (cost=0.42..21919.42 rows=601147 width=4) (actual time=0.024..72.847 rows=599450.00 loops=1)
+                                Filter: active
+                                Rows Removed by Filter: 200550
+                                Index Searches: 1
+                                Buffers: shared hit=6302
+Planning:
+  Buffers: shared hit=25
+Planning Time: 0.421 ms
+JIT:
+  Functions: 49
+  Options: Inlining false, Optimization false, Expressions true, Deforming true
+  Timing: Generation 1.384 ms (Deform 0.525 ms), Inlining 0.000 ms, Optimization 0.686 ms, Emission 11.731 ms, Total 13.802 ms
+Execution Time: 765.566 ms
+```
+I made a second index on book_inventory to 
