@@ -14,24 +14,24 @@ This ended up being more than a million (whoops). This ratio seemed realistic en
 **GET `/accounts/list/`** 782.484 ms  
 **POST `/accounts/create/`** 12.399 ms  
   
-**GET `/catalog/available/`**  
-**GET `/catalog/full_catalog/`**  
-**GET `/catalog/search/`**  
+**GET `/catalog/available/`** 1473.756 ms (Slowest endpoint)  
+**GET `/catalog/full_catalog/`** 1414.518 ms  
+**GET `/catalog/search/`** 368.113 ms  
   
-**POST `/wishlist/request/`**  
-**GET `/wishlist/`**  
-**POST `/wishlist/{wishlist_id}/fufill/`**  
-  
-**POST `/admin/reset/`**  
-**GET `/admin/accounts/{account_id}`**  
-**GET `/admin/accounts/{account_id}/checkouts`**  
+**POST `/wishlist/request/`** 23.308 ms  
+**GET `/wishlist/`**  33.760 ms  
+**POST `/wishlist/{wishlist_id}/fufill/`** 35.544 ms  
+    
+**POST `/admin/reset/`** Ommitted from tests since it is a test endpoint that clears out the data from every single table.  
+**GET `/admin/accounts/{account_id}`** 10.861 ms  
+**GET `/admin/accounts/{account_id}/checkouts`** 38.865 ms  
 
-**POST `/checkout/{book_id}/`**  
-**POST `/checkout/return/{book_copy_id}`**  
+**POST `/checkout/{book_id}/`** 82.069 ms  
+**POST `/checkout/return/{book_copy_id}`** 54.217 ms  
 
-**POST `/holds/{book_id}/`**  
-**GET `/holds/view_holds/{book_id}`**  
+**POST `/holds/{book_id}/`** 57.132 ms  
+**GET `/holds/view_holds/{book_id}`** 31.843 ms  
 
 **POST `/inventory/remove_book/{book_id}`**  
-**POST `/inventory/remove_book_copy/{book_copy_id}`**  
+**POST `/inventory/remove_book_copy/{book_copy_id}`** 41.792 ms  
 ## Performance tuning
