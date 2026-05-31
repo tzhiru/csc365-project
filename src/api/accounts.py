@@ -53,7 +53,7 @@ def get_accounts(search_page: str = "") -> AcctResponse:
                 """
                 SELECT *
                 FROM patron_accounts
-                ORDER BY last_name DESC
+                ORDER BY last_name ASC
                 OFFSET :offset
                 """
             ),
