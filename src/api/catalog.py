@@ -67,11 +67,12 @@ def get_available_books(search_page: str = ""):
                 )
                 SELECT id, title, first, last, date_published, total_copies, copies_available
                 FROM data
-                WHERE copies_available > 0    
+                WHERE copies_available > 0
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            [{"offset": offset}],
+            [{"offset": offset, "limit": limit + 1}],
         )
         for bk in books:
             if i == limit:
@@ -138,10 +139,11 @@ def get_books(search_page: str = ""):
                 WHERE active = TRUE
                 GROUP BY books.id, authors.id, checked.total
                 ORDER BY books.title ASC
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            [{"offset": offset}],
+            [{"offset": offset, "limit": limit + 1}],
         )
         for bk in books:
             if i == limit:
@@ -216,10 +218,11 @@ def search_catalog(
                 AND (books.title = :title OR (authors.first_name = :author OR authors.last_name = :author))
                 GROUP BY books.id, authors.id, checked.total
                 ORDER BY books.title ASC
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            {"title": title, "author": author, "offset": offset},
+            {"title": title, "author": author, "offset": offset, "limit": limit + 1},
         )
         for bk in books:
             if i == limit:

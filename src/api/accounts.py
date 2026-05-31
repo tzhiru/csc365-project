@@ -54,10 +54,11 @@ def get_accounts(search_page: str = "") -> AcctResponse:
                 SELECT *
                 FROM patron_accounts
                 ORDER BY last_name ASC
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            [{"offset": offset}],
+            [{"offset": offset, "limit": limit + 1}],
         )
         for row in account_results:
             if i == limit:
