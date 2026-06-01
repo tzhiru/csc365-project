@@ -64,7 +64,7 @@ def get_available_books(search_page: str = ""):
                     GROUP BY books.id, authors.id, checked.total
                     ORDER BY books.title asc
                 )
-                SELECT id, title, first, last, date_published, total_copies, copies_available
+                SELECT id, title, author, date_published, total_copies, copies_available
                 FROM data
                 WHERE copies_available > 0
                 LIMIT :limit
