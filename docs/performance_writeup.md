@@ -204,10 +204,11 @@ JIT:
   Timing: Generation 1.384 ms (Deform 0.525 ms), Inlining 0.000 ms, Optimization 0.686 ms, Emission 11.731 ms, Total 13.802 ms
 Execution Time: 765.566 ms
 ```
-The first index improves the time. I tried a couple more indexes, but they didn't change the performance of the query so I dropped them. These were indexing by the active status of the book copies (since it is relevant to the query), indexing by the author of the book types 
+The first index improves the time. I tried a couple more indexes, but they didn't affect the performance of the query so I dropped them. These were indexing by the active status of the book copies (since it is relevant to the query) and indexing by the title and/or author of the book types.
 ```
 CREATE INDEX active_iv ON book_inventory (active desc);
-CREATE INDEX
+CREATE INDEX book_title ON books (title);
+CREATE INDEX book_sort ON books (title, author_id);
 ```
 I rewrote the query slightly (removing the WITH and consolidating so that the subquery also has the limit) to see if that would improve the time:
 ```
