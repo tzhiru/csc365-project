@@ -18,7 +18,7 @@ Time in ms each endpoint took to execute via curl.
   
 **GET `/catalog/available/`** 702.569 ms  
 **GET `/catalog/full_catalog/`** 748.483 ms (Longest endpoint)  
-**GET `/catalog/search/`** 368.113 ms  
+**GET `/catalog/search/`** 257.357 ms  
   
 **POST `/wishlist/request/`** 23.308 ms  
 **GET `/wishlist/`**  33.760 ms  
