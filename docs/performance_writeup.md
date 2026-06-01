@@ -46,10 +46,9 @@ WITH checked (book_id, total) AS (
                     LEFT JOIN checkouts on book_inventory_id = book_inventory.id
                     GROUP BY book_id
                     ORDER BY book_id
-)
-SELECT books.id, books.title,
-  authors.first_name as first, authors.last_name as last, date_published,
-  count(*) as total_copies, (count(*) - checked.total) as copies_available
+                )
+SELECT books.id, books.title, concat(authors.first_name, ' ', authors.last_name) as author,
+  date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
 FROM book_inventory
 JOIN books on book_inventory.book_id = books.id
 JOIN authors on books.author_id = authors.id
