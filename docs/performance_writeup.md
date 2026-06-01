@@ -133,7 +133,7 @@ JIT:
   Timing: Generation 1.437 ms (Deform 0.510 ms), Inlining 0.000 ms, Optimization 1.048 ms, Emission 13.811 ms, Total 16.296 ms
 Execution Time: 854.590 ms
 ```
-The plan uses a sequential scan once on checkouts and twice on book_inventory. Checkouts is currently less than a page long, so creating an index for it won't change the results. Creating an index on book_inventory improved the speed a tiny amount.
+The plan uses a sequential scan once on checkouts and twice on book_inventory. Checkouts is currently less than a page long, so creating an index for it won't change the results. Creating an index on book_inventory improved the speed a tiny amount. This index organizes the book copies by what type of book they are a copy of, which is helpful when counting the number of avaliable copies of each book type.
 ```
 CREATE INDEX book_inv ON book_inventory (book_id)
 ```
@@ -204,7 +204,7 @@ JIT:
   Timing: Generation 1.384 ms (Deform 0.525 ms), Inlining 0.000 ms, Optimization 0.686 ms, Emission 11.731 ms, Total 13.802 ms
 Execution Time: 765.566 ms
 ```
-I tried a couple more indexes, but they didn't change the performance of the query so I dropped them.
+The first index improves the time. I tried a couple more indexes, but they didn't change the performance of the query so I dropped them. These were indexing by the active status of the book copies (since it is relevant to the query), indexing by the author of the book types 
 ```
 CREATE INDEX active_iv ON book_inventory (active desc);
 CREATE INDEX
