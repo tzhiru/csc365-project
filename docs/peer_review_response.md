@@ -104,3 +104,70 @@ There are seperate tables for books and their individual copies (instead of just
 12. Not sure the purpose of default API call, I would remove it if I where you
       
 This is the default call of the app and shows that the app is online. There is no need to remove it. 
+
+## Peer Review Feedback (Adarsh Murugesan)
+### Code review
+
+1. In catalog.py, the search query uses exact matching (=) instead of substring matching (ILIKE). If both filters are omitted, the search returns nothing instead of the full catalog.  
+
+This feedback was addressed. The search query has been updated to use ILIKE with % wildcards for partial, case-insensitive matching on both title and author. The NULL parameter issue has also been fixed by building the WHERE clause dynamically in Python so that NULL is never passed to Postgres.
+
+2. In admin.py, /admin/reset will throw a runtime error because checkouts is not included in the TRUNCATE list, causing a foreign key constraint violation.
+
+Response: This feedback was addressed. The checkouts table has been added to the TRUNCATE statement in the reset endpoint, and CASCADE has been added to handle any remaining foreign key dependencies.
+
+3. In inventory.py, the route /remove_copy/{book_id} declares a path parameter book_id but the function uses book_copy_id, causing a mismatch where the path value is ignored.
+
+Response: This feedback was addressed. The path parameter has been corrected to use book_copy_id consistently in both the route definition and the function signature.
+
+4. In catalog.py, copies_available can go negative if a copy is checked out and then marked inactive, because the count only includes active copies but the checked CTE counts all open checkouts.
+
+Response: This feedback was addressed. We wrapped the subtraction in GREATEST(..., 0) in both get_books() and search_catalog() to prevent copies_available from going negative in the edge case where a copy is checked out and then marked inactive.
+
+5. In inventory.py, /inventory/remove_book does a hard DELETE which raises a foreign key error when book_inventory rows exist.
+
+Response: This feedback was addressed. The remove_book endpoint has been updated to perform a soft delete by setting active = FALSE on all copies of the book rather than deleting the book row itself. This prevents foreign key errors and preserves checkout history.
+
+6. In checkout.py, there is a race condition where two simultaneous checkout requests can grab the same copy.
+
+Response: This feedback was identified and is documented in our concurrency.md file as one of the three concurrency scenarios. We describe the lost update phenomenon and the solution of using SELECT ... FOR UPDATE SKIP LOCKED to prevent double checkout.
+
+7. In auth.py, the API key is printed to logs on every request. secrets.compare_digest() should be used instead of ==, and the 401 status code should not use "Forbidden" as the detail message.
+
+This feedback was partially addressed. The print statement logging the API key has been removed. The secrets.compare_digest() improvement and the status code/message mismatch are noted as valid improvements for a future version.
+
+8. default.env ships with a usable fallback API key (brat), meaning any environment without its own key silently uses the committed value.
+
+Response: This feedback was not addressed. We acknowledge this is a security concern. For our current academic project context the risk is low, but we note that in a production setting a missing key should cause a hard startup error rather than falling back to a known default.
+
+9. In server.py, the CORS setup only allows GET and OPTIONS, blocking POST requests from browsers. The allowed origin also points to the old potion shop project.
+
+Response: This feedback was addressed. The CORS configuration has been updated to include POST in the allowed methods and the allowed origin has been corrected to match the library project.
+
+10. There is leftover material from the old potions project including pyproject.toml naming, commented-out test files, and admin tag descriptions.
+
+Response: This feedback was addressed. The pyproject.toml name and description have been updated to reflect the library project, and leftover commented-out potion test files have been cleaned up.
+
+11. docs/APISpec.md does not match the actual implemented routes.
+
+Response: This feedback was addressed. The APISpec.md has been updated to reflect the actual routes currently implemented in the service.
+
+12. PatronAccount is defined separately in both accounts.py and admin.py with inconsistent field names (patron_id vs account_id).
+
+Response: This feedback was partially addressed. The PatronAccount class from admin.py has been replaced with an import from accounts.py to avoid duplication. We acknowledge the field name inconsistency and have standardized to patron_id across both files.
+
+13. There are no indexes on frequently filtered columns such as book_inventory_id, patron_id, and returned_at in the checkouts table.
+
+Response: This feedback was addressed as part of our V5 performance tuning work. We ran EXPLAIN ANALYZE on our slowest endpoints and added indexes based on the results.
+
+14. book_inventory.barcode is stored as an Integer, but barcodes and ISBNs can have leading zeros and exceed 32-bit range.
+
+Response: This feedback was not addressed. Changing the column type would require a new migration. We acknowledge this is a valid concern and would change the barcode column to TEXT in a future version.
+15. There is no validation on account creation — empty names and malformed phone numbers are accepted.
+
+Response: This feedback was not addressed. Adding Pydantic field constraints such as minimum length and regex validation for phone numbers is a valid improvement. This is noted as a future enhancement.
+
+16. Print statements used for logging, commented-out code blocks, and remove_book/remove_copy using POST instead of DELETE.
+
+Response: Print statements have been removed from accounts.py and inventory.py. The large commented-out search block in catalog.py has been deleted. The POST vs DELETE issue is acknowledged as a valid RESTful design concern but was not changed at this stage to avoid breaking existing test documentation.
+
