@@ -37,7 +37,7 @@ Time in ms each endpoint took to execute via curl.
 **POST `/inventory/remove_book/{book_id}`** 135.799 ms  
 **POST `/inventory/remove_book_copy/{book_copy_id}`** 41.792 ms  
 ## Performance tuning
-`/catalog/full_catalog/` runs this query, where the limit is set to 21 and the offset determines what page of results to look at. 
+`/catalog/full_catalog/` ran this query, where the limit is set to 21 and the offset determines what page of results to look at. 
 ```
 WITH checked (book_id, total) AS (
                     SELECT book_id, 
