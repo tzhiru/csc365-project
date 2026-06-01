@@ -81,8 +81,7 @@ def get_available_books(search_page: str = ""):
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.first,
-                    author_last=bk.last,
+                    author=bk.author,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
