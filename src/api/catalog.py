@@ -120,22 +120,15 @@ def get_books(search_page: str = ""):
         books = connection.execute(
             sqlalchemy.text(
                 """
-                WITH checked (book_id, total) AS (
-                    SELECT book_id, 
-                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
-                    FROM book_inventory
-                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
-                    GROUP BY book_id
-                    ORDER BY book_id
-                )
                 SELECT books.id, books.title, concat(authors.first_name, ' ', authors.last_name) as author,
-                date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
+                date_published, count(*) as total_copies, 
+                (count(*) - SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END)) as copies_available
                 FROM book_inventory
                 JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
-                JOIN checked on books.id = checked.book_id
+                LEFT JOIN checkouts on book_inventory_id = book_inventory.id
                 WHERE active = TRUE
-                GROUP BY books.id, authors.id, checked.total
+                GROUP BY books.id, authors.id
                 ORDER BY books.title ASC
                 LIMIT :limit
                 OFFSET :offset
