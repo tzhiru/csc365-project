@@ -204,4 +204,71 @@ JIT:
   Timing: Generation 1.384 ms (Deform 0.525 ms), Inlining 0.000 ms, Optimization 0.686 ms, Emission 11.731 ms, Total 13.802 ms
 Execution Time: 765.566 ms
 ```
-I made a second index on book_inventory to 
+I tried a couple more indexes, but they didn't change the performance of the query so I dropped them.
+```
+CREATE INDEX active_iv ON book_inventory (active desc);
+CREATE INDEX
+```
+I rewrote the query slightly (removing the WITH and consolidating so that the subquery also has the limit) to see if that would improve the time:
+```
+SELECT books.id, books.title, concat(authors.first_name, ' ', authors.last_name) as author,
+  date_published, count(*) as total_copies, (count(*) - SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END)) as copies_available
+FROM book_inventory
+JOIN books on book_inventory.book_id = books.id
+JOIN authors on books.author_id = authors.id
+LEFT JOIN checkouts on book_inventory_id = book_inventory.id
+WHERE active = TRUE
+GROUP BY books.id, authors.id
+ORDER BY books.title ASC
+LIMIT :limit
+OFFSET :offset
+```
+This improved the time even more.
+```
+Limit  (cost=147232.67..147232.72 rows=21 width=94) (actual time=575.474..575.481 rows=21.00 loops=1)
+  Buffers: shared hit=2458 read=4718, temp read=7180 written=12778
+  ->  Sort  (cost=147232.67..148735.54 rows=601147 width=94) (actual time=566.255..566.260 rows=21.00 loops=1)
+        Sort Key: books.title
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=2458 read=4718, temp read=7180 written=12778
+        ->  HashAggregate  (cost=107918.21..131024.79 rows=601147 width=94) (actual time=440.261..539.239 rows=199194.00 loops=1)
+              Group Key: books.id, authors.id
+              Planned Partitions: 16  Batches: 17  Memory Usage: 8345kB  Disk Usage: 47304kB
+              Buffers: shared hit=2458 read=4718, temp read=7180 written=12778
+              ->  Hash Left Join  (cost=8563.18..33526.26 rows=601147 width=68) (actual time=40.616..299.718 rows=599451.00 loops=1)
+                    Hash Cond: (book_inventory.id = checkouts.book_inventory_id)
+                    Buffers: shared hit=2458 read=4718, temp read=2781 written=2781
+                    ->  Hash Join  (cost=8562.00..31270.72 rows=601147 width=64) (actual time=40.593..258.669 rows=599450.00 loops=1)
+                          Hash Cond: (books.author_id = authors.id)
+                          Buffers: shared hit=2457 read=4718, temp read=2781 written=2781
+                          ->  Hash Join  (cost=8275.00..29405.04 rows=601147 width=50) (actual time=39.019..197.816 rows=599450.00 loops=1)
+                                Hash Cond: (book_inventory.book_id = books.id)
+                                Buffers: shared hit=2395 read=4718, temp read=2781 written=2781
+                                ->  Seq Scan on book_inventory  (cost=0.00..13096.00 rows=601147 width=8) (actual time=0.067..42.472 rows=599450.00 loops=1)
+                                      Filter: active
+                                      Rows Removed by Filter: 200550
+                                      Buffers: shared hit=378 read=4718
+                                ->  Hash  (cost=4017.00..4017.00 rows=200000 width=46) (actual time=38.404..38.405 rows=200000.00 loops=1)
+                                      Buckets: 131072  Batches: 4  Memory Usage: 4938kB
+                                      Buffers: shared hit=2017, temp written=1242
+                                      ->  Seq Scan on books  (cost=0.00..4017.00 rows=200000 width=46) (actual time=0.015..10.154 rows=200000.00 loops=1)
+                                            Buffers: shared hit=2017
+                          ->  Hash  (cost=162.00..162.00 rows=10000 width=18) (actual time=1.563..1.563 rows=10000.00 loops=1)
+                                Buckets: 16384  Batches: 1  Memory Usage: 632kB
+                                Buffers: shared hit=62
+                                ->  Seq Scan on authors  (cost=0.00..162.00 rows=10000 width=18) (actual time=0.020..0.511 rows=10000.00 loops=1)
+                                      Buffers: shared hit=62
+                    ->  Hash  (cost=1.08..1.08 rows=8 width=12) (actual time=0.018..0.018 rows=8.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on checkouts  (cost=0.00..1.08 rows=8 width=12) (actual time=0.011..0.012 rows=8.00 loops=1)
+                                Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=25
+Planning Time: 0.366 ms
+JIT:
+  Functions: 39
+  Options: Inlining false, Optimization false, Expressions true, Deforming true
+  Timing: Generation 1.329 ms (Deform 0.393 ms), Inlining 0.000 ms, Optimization 0.674 ms, Emission 11.456 ms, Total 13.459 ms
+Execution Time: 582.104 ms
+```
