@@ -273,3 +273,4 @@ JIT:
   Timing: Generation 1.329 ms (Deform 0.393 ms), Inlining 0.000 ms, Optimization 0.674 ms, Emission 11.456 ms, Total 13.459 ms
 Execution Time: 582.104 ms
 ```
+The query stops using book_inv and sorts by book.title.
