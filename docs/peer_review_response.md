@@ -163,6 +163,7 @@ Response: This feedback was addressed as part of our V5 performance tuning work.
 14. book_inventory.barcode is stored as an Integer, but barcodes and ISBNs can have leading zeros and exceed 32-bit range.
 
 Response: This feedback was not addressed. Changing the column type would require a new migration. We acknowledge this is a valid concern and would change the barcode column to TEXT in a future version.
+
 15. There is no validation on account creation — empty names and malformed phone numbers are accepted.
 
 Response: This feedback was not addressed. Adding Pydantic field constraints such as minimum length and regex validation for phone numbers is a valid improvement. This is noted as a future enhancement.
@@ -171,3 +172,41 @@ Response: This feedback was not addressed. Adding Pydantic field constraints suc
 
 Response: Print statements have been removed from accounts.py and inventory.py. The large commented-out search block in catalog.py has been deleted. The POST vs DELETE issue is acknowledged as a valid RESTful design concern but was not changed at this stage to avoid breaking existing test documentation.
 
+### Schema/API design (Adarsh Murugesan)
+1. There is no reviews or ratings table despite it being described in the API spec and user stories.
+Response: This feedback was not addressed. Reviews and ratings were planned features that were not implemented within the scope of the project. The API spec has been updated to remove the review endpoints that were not implemented.
+
+2. There is no category or genre column on books, despite being referenced in the API spec.
+Response: This feedback was not addressed. Categories were a planned feature that were not implemented. This would require a new table and migration and is noted as a future enhancement.
+
+3. The publishers table exists but is never used by any endpoint.
+Response: This feedback was not addressed. The publishers table was created as part of the initial schema design with the intention of building publisher-related features. It does not cause any harm in its current state.
+
+4. There is no way to add books, authors, or copies through the API — the catalog can only shrink.
+
+5. Authors have no uniqueness constraint, so duplicate authors can be created. A book also cannot have more than one author.
+Response: This feedback was not addressed. This is a significant schema change that would require a new migration and updates to every query across catalog.py, checkout.py, admin.py, and holds.py. Given the risk of breaking the deployed service this close to the deadline, we chose not to make this change. We acknowledge it as a valid limitation of the current data model and would address it in a future version.
+
+6. There is no checkout limit or overdue handling logic.
+
+7. patron_accounts has no unique key, email, or username, so duplicate accounts cannot be rejected.
+
+8. Timestamps are inconsistent across tables — some have created_at and some do not.
+Response: This feedback was not addressed. Adding created_at timestamps across all tables would require a new migration. This is noted as a future improvement for auditing purposes.
+
+9. The same patron is returned as patron_id from the accounts router and account_id from the admin router.
+Response: This feedback was addressed. We have standardized to patron_id across both the accounts and admin routers.
+
+10. Checkout and return are asymmetric — checkout uses book_id and the server picks a copy, but return requires knowing the specific book_copy_id.
+Response: This feedback was not addressed. The return endpoint actually accepts a book_id and patron_id and finds the active checkout automatically it does not require the patron to know the copy ID.
+
+11. Routes are split across prefixes in a hard-to-predict way.
+
+12. List endpoints have no pagination.
+Response: This feedback was partially addressed. Pagination has been implemented for GET /accounts/. 
+
+13. The search endpoint only does exact matching and cannot combine filters or search by category.
+Response: This feedback was partially addressed. The search endpoint now uses partial, case-insensitive matching via ILIKE and supports filtering by both title and author. Category filtering is not yet supported as there is no category column in the schema.
+
+14. There is no consistent soft delete — book_inventory has an active flag but books does not.
+Response: This feedback was partially addressed. The remove_book endpoint has been updated to perform a soft delete on copies by setting active = FALSE rather than deleting rows. A corresponding active flag on the books table itself is noted as a future improvement.
