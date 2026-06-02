@@ -25,35 +25,28 @@ Creates an account for a new patron and returns the account id to be used for ch
 2. Checkout book (add to user's account's list of checked out books)
 ### 1. `/catalog/search/` (GET)
 Searches the library catalog via specific parameters. Returns a list of all matching search results.  
-**Request:**  
-```json
-[
-  {
-    "title": "string", //optional
-    "author": "string", //optional
-    "available_only": "boolean" //defaults to True,
-    "search_page": "string" //optional
-  }
-]
-```
+**Query Parameters:**  
+* `title` (string, optional)
+* `author` (string, optional)
+* `available_only` (boolean, defaults to True)
+* `search_page` (string, optional)
+
 **Response:**  
 ```json
-[
-  {
-    "previous": "string",
-    "next": "string",
-    "results": [
-      {
-        "book_id": "number",
-        "title": "string",
-        "author": "string",
-        "copies_available": "number",
-        "total_copies": "number",
-        "date_published": "string"
-      }
-    ]
-  }
-]
+{
+  "previous": "string",
+  "next": "string",
+  "results": [
+    {
+      "book_id": "number",
+      "title": "string",
+      "author": "string",
+      "copies_available": "number",
+      "total_copies": "number",
+      "date_published": "string"
+    }
+  ]
+}
 ```
 
 ### 2. `/catalog/{book_id}` (GET)
