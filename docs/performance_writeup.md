@@ -16,7 +16,7 @@ Time in ms each endpoint took to execute via curl.
 **GET `/accounts/list/`** 26.302 ms  
 **POST `/accounts/create/`** 12.399 ms  
   
-**GET `/catalog/search/`** 87.212 ms (Longest)  
+**GET `/catalog/search/`** with both search attributes: 87.212 ms (Longest)  
   
 **POST `/wishlist/request/`** 23.308 ms  
 **GET `/wishlist/`**  33.760 ms  
@@ -148,7 +148,7 @@ Planning Time: 0.404 ms
 Execution Time: 82.574 ms
 ```
 This removes some work for the query to do.   
-I also tried using a GIN trigram index on title:  
+I also tried using a GIN trigram index on title, to speed up the ILIKE call:  
 ```
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX bk_title_tgm ON books USING gin (title gin_trgm_ops);
