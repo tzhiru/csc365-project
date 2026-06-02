@@ -25,6 +25,7 @@ def reset():
                 authors, publishers,
                 patron_accounts
                 RESTART IDENTITY
+                CASCADE
                 """
             )
         )

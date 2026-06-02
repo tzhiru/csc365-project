@@ -2,15 +2,12 @@ from fastapi import APIRouter, status, Depends, HTTPException
 import sqlalchemy
 from src.api import auth
 from src import database as db
-# from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/inventory",
     tags=["inventory"],
     dependencies=[Depends(auth.get_api_key)],
 )
-
-# inventory management
 
 
 @router.post(

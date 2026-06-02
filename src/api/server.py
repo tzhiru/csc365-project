@@ -12,7 +12,7 @@ tags_metadata = [
     {"name": "holds", "description": "Request a hold on a book."},
     {"name": "wishlist", "description": "Request new library books."},
     {"name": "inventory", "description": "Manage library catalog."},
-    {"name": "admin", "description": "Reset the game state."},
+    {"name": "admin", "description": "Admin tools for reseting the library system."},
 ]
 
 app = FastAPI(
@@ -22,13 +22,13 @@ app = FastAPI(
     openapi_tags=tags_metadata,
 )
 
-origins = ["https://potion-exchange.vercel.app"]
+origins = ["*"] 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
