@@ -109,8 +109,6 @@ def add_book_copy(copy: BookCopyRequest):
         return {"copy_id": copy_id, "success": True}
 
 
-
-
 @router.post(
     "/remove_book/{book_id}",
     tags=["inventory"],

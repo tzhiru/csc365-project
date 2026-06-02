@@ -22,7 +22,7 @@ app = FastAPI(
     openapi_tags=tags_metadata,
 )
 
-origins = ["*"] 
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,

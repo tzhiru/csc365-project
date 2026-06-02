@@ -42,11 +42,30 @@ def place_hold(book_id: int, request: HoldRequest):
         if not patron:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
-        # find an available copy of the book
+        existing_holds = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT patron_id
+                FROM holds
+                WHERE active = TRUE AND book_id = :book_id
+                """
+            ),
+            {
+                "book_id": book_id,
+            },
+        )
+
+        holding_users = []
+        holds = 0
+        for patron in existing_holds:
+            holding_users.append(patron.patron_id)
+            holds += 1
+
+        # how many available copies
         available_copy = connection.execute(
             sqlalchemy.text(
                 """
-                SELECT bi.id
+                SELECT count(*)
                 FROM book_inventory bi
                 WHERE bi.book_id = :book_id AND bi.active = TRUE
                     AND bi.id NOT IN (
@@ -54,35 +73,18 @@ def place_hold(book_id: int, request: HoldRequest):
                         FROM checkouts 
                         WHERE returned_at IS NULL
                     )
-                LIMIT 1
                 """
             ),
             {"book_id": book_id},
-        ).fetchone()
+        ).scalar_one()
 
-        if available_copy:
+        if available_copy > 0 and holds < available_copy:
             raise HTTPException(
                 status_code=403,
                 detail="This book is currently avaliable, request it via checkouts.",
             )
 
-        # check if the user already has a hold on this book.
-        dupe_hold_check = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT book_id
-                FROM holds
-                WHERE patron_id = :patron_id AND active = TRUE AND book_id = :book_id
-                LIMIT 1
-                """
-            ),
-            {
-                "book_id": book_id,
-                "patron_id": request.patron_id,
-            },
-        ).fetchone()
-
-        if dupe_hold_check:
+        if request.patron_id in holding_users:
             raise HTTPException(
                 status_code=403,
                 detail="This patron already has an active hold on this book.",
