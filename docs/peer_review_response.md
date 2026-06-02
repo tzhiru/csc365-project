@@ -22,9 +22,33 @@
 
 **Response:** This feedback was not addressed. The `reset()` endpoint is intended solely as a development and testing tool to restore the database to a clean state. It is not meant to be used in production. Keeping it as a full reset is intentional so that developers can reliably test from a known baseline. We have noted this in the endpoint's docstring.
 
+
+## Schema/API Design comments (Diego Melgoza)
+
+**Feedback 1 & 2:** In accounts.py, the router call “GET /accounts/list” should be renamed to “GET /accounts”. This would help with simplicity and keep the URI focused on using the next URI sublink to represent a single account (i.e. “/accounts/{account_id}”).
+
+
+**Response:** This feedback was addressed both routers have been changed.
+
+**Feedback 3:** In catalog.py, the two functions get_available_books() and get_books() should be placed under one router call. If the code is changed to allow for users to toggle between the two modes (see my 2nd code review comment), then the API will only need one “GET /catalog”. This change would help keep the next URI sublink reserved for specific catalog items.
+
+**Response:** This feedback was not addressed. The two functions serve distinct purposes and return different response models. get_available_accounts () returns books with at least one copy available, while get_books () returns books with total and available copies.
+
+**Feedback 4:** If other types of items are planned to be implemented, the router calls will need be specific to whatever resource they are manipulating. This would require changing the current URIs in catalog.py from “/catalog” to “/books” to clarify that actions are being done to the books in the system.
+
+**Response:** This feedback was not addressed. Renaming all routes this late in the project would risk breaking the deployed service and would require updates.
+
+**Feedback 5:** In admin.py, the router calls “GET admin/accounts/{account_id}/checkouts” and “GET admin/accounts/{account_id}” should be relocated to accounts.py and be relabeled as “GET accounts/{account_id}/checkouts” and “GET accounts/{account_id}". This change removes the repetition of “accounts” in the URI’s and places the router actions in the file that directly relates to their relevant information.
+
+**Response:** This feedback was not addressed. We chose to keep admin functionality in admin.py to maintain a clear seperation.
+
+**Feedback 8:** In `admin.py`, `reset()` truncates the `books`, `authors`, and `publishers` tables, which could be inconvenient if they grow large, since that data would need to be re-added manually.
+
+**Response:** This feedback was not addressed. The `reset()` endpoint is intended solely as a development and testing tool to restore the database to a clean state. It is not meant to be used in production. Keeping it as a full reset is intentional so that developers can reliably test from a known baseline. We have noted this in the endpoint's docstring.
+
 ## Peer Review Feedback (David Talavera-Dean)
 ### Code review
-1. Where every you have a object named "row" or "results", I would change this to be more specific, that way its more readable and its just a better coding practice to give them meaningful names  
+1. Where ever you have an object named "row" or "results", I would change this to be more specific, that way its more readable and its just a better coding practice to give them meaningful names  
   
 All "result" variable names have been changed. However, not every instance of "row" has been changed, as where they show up in the code it is still understandable.  
   
@@ -34,7 +58,7 @@ Two different base models are required: One is without the account id, so that a
   
 3. You guys seem to use repeat PartonAccount class in adim.py, I would just imported instead writing the class again
   
-This has been added.  
+This has been added. 
   
 4. The quarry at line 53 in adim.py is hard to read with the new name you gave to the tables. I see the idea of making it easier to write, but as an outsider read, it makes it hard to understand. Anywhere else where thats is done I would also change it  
   
