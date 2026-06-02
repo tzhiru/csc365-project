@@ -20,27 +20,49 @@ router = APIRouter(
 )
 def remove_book(book_id: int):
     """
-    Remove a book type from the catalog.
+    Remove a book type from the catalog by marking all active copies in the catalog as inactive.
+    Fails if there are copies of the book currently checked out.
     """
     print(f"removing book from catalog. id: {book_id}")
     with db.engine.begin() as connection:
-        update = connection.execute(
+        checkouts = connection.execute(
             sqlalchemy.text(
                 """
-                DELETE FROM books
-                WHERE id = :book_id
+                SELECT count(*)
+                FROM checkouts
+                JOIN book_inventory ON book_inventory_id = book_inventory.id
+                WHERE returned_at IS NULL AND book_id = :book_id
+            """
+            ),
+            [{"book_id": book_id}],
+        ).scalar_one()
+
+        if checkouts > 0:
+            raise HTTPException(
+                status_code=404,
+                detail="There are copies of this book currently checked out.",
+            )
+
+        copies = connection.execute(
+            sqlalchemy.text(
+                """
+                UPDATE book_inventory
+                SET active = FALSE
+                WHERE book_id = :book_id AND active = TRUE
                 RETURNING id
             """
             ),
             [{"book_id": book_id}],
         )
-        if update.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Book not found")
-    # also put this in another file later so that you need the api key to do this
+
+        if copies.rowcount == 0:
+            raise HTTPException(
+                status_code=404, detail="No copies of the book were found"
+            )
 
 
 @router.post(
-    "/remove_copy/{book_id}",
+    "/remove_copy/{book_copy_id}",
     tags=["inventory"],
     status_code=status.HTTP_204_NO_CONTENT,
 )

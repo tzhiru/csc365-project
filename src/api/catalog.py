@@ -15,8 +15,7 @@ router = APIRouter(
 class CatalogItem(BaseModel):
     book_id: int
     title: str
-    author_first: str
-    author_last: str
+    author: str
     copies_available: int
     total_copies: int
     date_published: str
@@ -55,7 +54,7 @@ def get_available_books(search_page: str = ""):
                     ORDER BY book_id
                 ),
                 data as (
-                    SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
+                    SELECT books.id, books.title, concat(authors.first_name, ' ', authors.last_name) as author,
                     date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
                     FROM book_inventory
                     JOIN books on book_inventory.book_id = books.id
@@ -65,13 +64,14 @@ def get_available_books(search_page: str = ""):
                     GROUP BY books.id, authors.id, checked.total
                     ORDER BY books.title asc
                 )
-                SELECT id, title, first, last, date_published, total_copies, copies_available
+                SELECT id, title, author, date_published, total_copies, copies_available
                 FROM data
-                WHERE copies_available > 0    
+                WHERE copies_available > 0
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            [{"offset": offset}],
+            [{"offset": offset, "limit": limit + 1}],
         )
         for bk in books:
             if i == limit:
@@ -81,8 +81,7 @@ def get_available_books(search_page: str = ""):
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.first,
-                    author_last=bk.last,
+                    author=bk.author,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
@@ -121,27 +120,21 @@ def get_books(search_page: str = ""):
         books = connection.execute(
             sqlalchemy.text(
                 """
-                WITH checked (book_id, total) AS (
-                    SELECT book_id, 
-                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
-                    FROM book_inventory
-                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
-                    GROUP BY book_id
-                    ORDER BY book_id
-                )
-                SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
-                date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
+                SELECT books.id, books.title, concat(authors.first_name, ' ', authors.last_name) as author,
+                date_published, count(*) as total_copies, 
+                (count(*) - SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END)) as copies_available
                 FROM book_inventory
                 JOIN books on book_inventory.book_id = books.id
                 JOIN authors on books.author_id = authors.id
-                JOIN checked on books.id = checked.book_id
+                LEFT JOIN checkouts on book_inventory_id = book_inventory.id
                 WHERE active = TRUE
-                GROUP BY books.id, authors.id, checked.total
+                GROUP BY books.id, authors.id
                 ORDER BY books.title ASC
+                LIMIT :limit
                 OFFSET :offset
                 """
             ),
-            [{"offset": offset}],
+            [{"offset": offset, "limit": limit + 1}],
         )
         for bk in books:
             if i == limit:
@@ -151,8 +144,7 @@ def get_books(search_page: str = ""):
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.first,
-                    author_last=bk.last,
+                    author=bk.author,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
@@ -183,44 +175,39 @@ def search_catalog(
     Search the catalog by title and/or author name.
     Returns all matching books with how many active copies are currently available.
     """
+    order_by = db.book_log.c.title
 
-    items: List[CatalogItem] = []
-    nextpage = False
-    limit = 20  # amount of results per page
+    limit = 20
     if search_page != "":
         pageno = int(search_page)
     else:
         pageno = 1
     offset = (pageno - 1) * limit
 
-    with db.engine.begin() as connection:
-        i = 0
-        books = connection.execute(
-            sqlalchemy.text(
-                """
-                WITH checked (book_id, total) AS (
-                    SELECT book_id, 
-                    SUM(CASE WHEN checkout_date IS NOT NULL AND returned_at IS NULL THEN 1 ELSE 0 END) as total
-                    FROM book_inventory
-                    LEFT JOIN checkouts on book_inventory_id = book_inventory.id
-                    GROUP BY book_id
-                    ORDER BY book_id
-                )
-                SELECT books.id, books.title, authors.first_name as first, authors.last_name as last,
-                date_published, count(*) as total_copies, (count(*) - checked.total) as copies_available
-                FROM book_inventory
-                JOIN books on book_inventory.book_id = books.id
-                JOIN authors on books.author_id = authors.id
-                JOIN checked on books.id = checked.book_id
-                WHERE active = TRUE
-                AND (books.title = :title OR (authors.first_name = :author OR authors.last_name = :author))
-                GROUP BY books.id, authors.id, checked.total
-                ORDER BY books.title ASC
-                OFFSET :offset
-                """
-            ),
-            {"title": title, "author": author, "offset": offset},
+    stmt = (
+        sqlalchemy.select(
+            db.book_log.c.id,
+            db.book_log.c.title,
+            db.book_log.c.author,
+            db.book_log.c.copies_available,
+            db.book_log.c.total_copies,
+            db.book_log.c.date_published,
         )
+        .limit(limit + 1)
+        .offset(offset)
+        .order_by(order_by, db.book_log.c.author)
+    )
+
+    if title != "":
+        stmt = stmt.where(db.book_log.c.title.ilike(f"%{title}%"))
+    if author != "":
+        stmt = stmt.where(db.book_log.c.author.ilike(f"%{author}%"))
+
+    items: List[CatalogItem] = []
+    nextpage = False
+    with db.engine.connect() as conn:
+        books = conn.execute(stmt)
+        i = 0
         for bk in books:
             if i == limit:
                 nextpage = True
@@ -229,8 +216,7 @@ def search_catalog(
                 CatalogItem(
                     book_id=bk.id,
                     title=bk.title,
-                    author_first=bk.first,
-                    author_last=bk.last,
+                    author=bk.author,
                     copies_available=bk.copies_available,
                     total_copies=bk.total_copies,
                     date_published=str(bk.date_published),
