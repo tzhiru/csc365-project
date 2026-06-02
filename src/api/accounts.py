@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlalchemy
@@ -31,6 +31,56 @@ class AcctResponse(BaseModel):
     previous: Optional[str] = None
     next: Optional[str] = None
     results: List[AccountItem]
+
+
+class CreateAccountResponse(BaseModel):
+    patron_id: int
+    first_name: str
+    last_name: str
+
+
+class CheckedOutBook(BaseModel):
+    checkout_id: int
+    book_id: int
+    title: str
+    author_first: str
+    author_last: str
+    copy_id: int
+    checkout_date: str
+    due_date: str
+
+
+@router.post("/create", response_model=CreateAccountResponse)
+def post_new_account(acct: PatronAccountInfo):
+    """
+    Create a new account.
+    """
+    with db.engine.begin() as connection:
+        acct_connect = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO patron_accounts (first_name, last_name, phone, address)
+                VALUES (:first, :last, :phone, :address)
+                RETURNING id
+                """
+            ),
+            [
+                {
+                    "first": acct.first_name,
+                    "last": acct.last_name,
+                    "phone": acct.phone_number,
+                    "address": acct.address,
+                }
+            ],
+        ).one()
+
+        return AccountItem(
+            patron_id=acct_connect.id,
+            first_name=acct.first_name,
+            last_name=acct.last_name,
+            phone_number=acct.phone_number,
+            address=acct.address,
+        )
 
 
 @router.get("/list/", tags=["accounts"], response_model=AcctResponse)
@@ -88,40 +138,81 @@ def get_accounts(search_page: str = "") -> AcctResponse:
     return AcctResponse(previous=previous, next=next, results=items)
 
 
-class CreateAccountResponse(BaseModel):
-    patron_id: int
-    first_name: str
-    last_name: str
-
-
-@router.post("/create", response_model=CreateAccountResponse)
-def post_new_account(acct: PatronAccountInfo):
+@router.get("/accounts/{account_id}/checkouts", response_model=List[CheckedOutBook])
+def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
     """
-    Create a new account.
+    Retrieve all books currently checked out by a specific patron.
     """
+    checkouts: List[CheckedOutBook] = []
+
     with db.engine.begin() as connection:
-        acct_connect = connection.execute(
+        # Check if patron exists
+        patron = connection.execute(
+            sqlalchemy.text("SELECT id FROM patron_accounts WHERE id = :account_id"),
+            {"account_id": account_id},
+        ).fetchone()
+
+        if not patron:
+            raise HTTPException(status_code=404, detail="Patron account not found.")
+
+        # Get checkouts
+        checkout_results = connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO patron_accounts (first_name, last_name, phone, address)
-                VALUES (:first, :last, :phone, :address)
-                RETURNING id
+                SELECT c.id as checkout_id, b.id as book_id, b.title, a.first_name as author_first, a.last_name as author_last,
+                       c.book_inventory_id as copy_id, c.checkout_date, c.due_date
+                FROM checkouts c
+                JOIN book_inventory bi ON c.book_inventory_id = bi.id
+                JOIN books b ON bi.book_id = b.id
+                JOIN authors a ON b.author_id = a.id
+                WHERE c.patron_id = :account_id AND c.returned_at IS NULL
+                ORDER BY c.due_date ASC
                 """
             ),
-            [
-                {
-                    "first": acct.first_name,
-                    "last": acct.last_name,
-                    "phone": acct.phone_number,
-                    "address": acct.address,
-                }
-            ],
-        ).one()
+            {"account_id": account_id},
+        )
+
+        for row in checkout_results:
+            checkouts.append(
+                CheckedOutBook(
+                    checkout_id=row.checkout_id,
+                    book_id=row.book_id,
+                    title=row.title,
+                    author_first=row.author_first,
+                    author_last=row.author_last,
+                    copy_id=row.copy_id,
+                    checkout_date=str(row.checkout_date),
+                    due_date=str(row.due_date),
+                )
+            )
+
+    return checkouts
+
+
+@router.get("/accounts/{account_id}", response_model=AccountItem)
+def get_patron_account(account_id: int) -> AccountItem:
+    """
+    Retrieve a specific patron account by ID.
+    """
+    with db.engine.begin() as connection:
+        row = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT id, first_name, last_name, phone, address
+                FROM patron_accounts
+                WHERE id = :account_id
+                """
+            ),
+            {"account_id": account_id},
+        ).fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Patron account not found.")
 
         return AccountItem(
-            patron_id=acct_connect.id,
-            first_name=acct.first_name,
-            last_name=acct.last_name,
-            phone_number=acct.phone_number,
-            address=acct.address,
+            patron_id=row.id,
+            first_name=row.first_name,
+            last_name=row.last_name,
+            phone_number=row.phone,
+            address=row.address,
         )
