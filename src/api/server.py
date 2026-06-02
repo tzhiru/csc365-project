@@ -6,13 +6,13 @@ description = """
 Library project for CSC 365
 """
 tags_metadata = [
-    {"name": "accounts", "description": "Manage patron accounts."},
     {"name": "catalog", "description": "View the library catalog."},
-    {"name": "wishlist", "description": "Request library books."},
-    {"name": "admin", "description": "Where you reset the game state."},
     {"name": "checkout", "description": "Check out or return a book."},
+    {"name": "accounts", "description": "Make or manage patron accounts."},
     {"name": "holds", "description": "Request a hold on a book."},
+    {"name": "wishlist", "description": "Request new library books."},
     {"name": "inventory", "description": "Manage library catalog."},
+    {"name": "admin", "description": "Reset the game state."},
 ]
 
 app = FastAPI(
