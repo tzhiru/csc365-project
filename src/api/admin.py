@@ -23,7 +23,8 @@ def reset():
                 holds, checkouts, wishlist,
                 book_inventory, books,
                 authors, publishers,
-                patron_accounts
+                patron_accounts,
+                checkouts
                 RESTART IDENTITY
                 CASCADE
                 """

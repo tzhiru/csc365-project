@@ -1,7 +1,7 @@
 [project]
-name = "centralcoastcauldrons"
+name = "library-365"
 version = "0.1.0"
-description = "Add your description here"
+description = "Backend API for a library system"
 readme = "README.md"
 requires-python = ">=3.12.9"
 dependencies = [

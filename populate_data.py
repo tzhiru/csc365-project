@@ -2,6 +2,12 @@ import sqlalchemy
 import os
 import dotenv
 from faker import Faker
+<<<<<<< HEAD
+=======
+
+
+# import numpy as np
+>>>>>>> 78fbff9 (Adarsh code review updates)
 import random
 
 
