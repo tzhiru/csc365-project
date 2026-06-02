@@ -5,22 +5,20 @@ Creates an account for a new patron and returns the account id to be used for ch
   
 **Request:**  
 ```json
-[
-  {
-    "first_name": "string",
-    "last_name": "string",
-    "address": "string",
-    "phone_number": "string"
-  }
-]
+{
+  "first_name": "string",
+  "last_name": "string",
+  "address": "string",
+  "phone_number": "string"
+}
 ```
 **Response:**  
 ```json
-[
-  {
-    "account_id": "string"
-  }
-]
+{
+  "patron_id": "number",
+  "first_name": "string",
+  "last_name": "string"
+}
 ```
 ## 2. Checking out books  
 1. Search catalog for specific items
@@ -72,63 +70,43 @@ Retrieves detailed information for a specific book by ID.
   "date_published": "string"
 }
 ```
-### 3. `/checkout/{book_id}/` (POST)  
+### 3. `/checkout/{book_id}` (POST)  
 Checks out the specified copy of a book under the user's account.  
   
 **Request**:  
 
 ```json
-[
-  {
-  "patron_id": "string"
-  }
-]
+{
+  "patron_id": "number"
+}
 ```
 
 **Response**:  
 
 ```json
-[
-  {
+{
   "success": "boolean",
   "checkout_id": "number",
-  "due_date": "date",
+  "due_date": "string",
   "copy_id": "number"
-  }
-]
+}
 ```
 ## 3. Returning books  
 Marks a checked out item as returned.
-### 1. `/checkout/return/{book_copy_id}/` (POST) 
+### 1. `/checkout/return/{book_copy_id}` (POST) 
 Returns the specified book and removes it from the user's list of checked out books
 **Request**:  
 ```json
-[]
+{}
 ```
 **Response**:  
 ```json
-[
-  {
+{
   "success": "boolean",
   "checkout_id": "number",
   "patron_id": "number",
-  "copy_id": "number
-  }
-]
-```
-### 2. `/admin/accounts/{account_id}/checkouts/` (GET) 
-Displays all books currently checked out under a specific account
-
-**Response:**  
-```json
-[
-  {
-    "book_id": "number",
-    "name": "string",
-    "author": "string",
-    "due_date": "string",
-  }
-]
+  "copy_id": "number"
+}
 ```
 ## 4. Editing the library catalog (admin functions)  
 ### 1. `/inventory/add_book` (POST)
@@ -204,35 +182,37 @@ Displays a list of all library patron accounts.
   ]
 }
 ```
-### 2. `/accounts/{account_id}/` (GET)
+### 2. `/accounts/{account_id}` (GET)
 Displays detailed information for a specific patron account.
  
 **Response**:
  
  ```json
  {
-    "account_id" : "string",
+    "patron_id" : "number",
     "first_name" : "string",
     "last_name" : "string",
     "address" : "string",
     "phone_number": "string"
  }
 ```
-### 3. `/accounts/{account_id}/checkouts/` (GET)
+### 3. `/accounts/{account_id}/checkouts` (GET)
  
 **Response**:
  
  ```json
-[
- {
-    "book_id" : "number",
-    "name" : "string",
-    "author" : "string",
-    "checkout_date" : "string",
-    "due_date": "string"
- }
-]
-
+ [
+  {
+     "checkout_id" : "number",
+     "book_id" : "number",
+     "title" : "string",
+     "author_first" : "string",
+     "author_last" : "string",
+     "copy_id" : "number",
+     "checkout_date" : "string",
+     "due_date": "string"
+  }
+ ]
 ```
 ## 6. Acquisition Request / Wishlist (Complex Endpoint)
 Allows a patron to submit a request for a book that is not currently in the library catalog. This endpoint is complex because it performs multiple reads before writing as it verifies the patron exists, checks whether the book already exists in the catalog, checks whether the patron has already submitted a request for this title, and checks whether other patrons have also requested it. Also, the response message adapts based on existing demand for the title.
@@ -243,24 +223,20 @@ Submit a request for a book not currently in the catalog.
 **Request:**
 
  ```json
-[
-  {
-    "patron_id": "number",
-    "title": "string",
-    "author": "string"
-  }
-]
+ {
+   "patron_id": "number",
+   "title": "string",
+   "author": "string"
+ }
 ```
 **Response:**
 
  ```json
-[
-  {
-    "success": "boolean",
-    "message": "string",
-    "wishlist_id": "number" 
-  }
-]
+ {
+   "success": "boolean",
+   "message": "string",
+   "wishlist_id": "number" 
+ }
 ```
 ### 2. `/wishlist/` (GET)
 Admin view of all acquisition requests, ordered alphabetically by title.
@@ -268,17 +244,16 @@ Admin view of all acquisition requests, ordered alphabetically by title.
 **Response:**
 
  ```json
-[
-  {
-    "wishlist_id": "number",
-    "patron_id": "number",
-    "title": "string",
-    "author": "string",
-    "requested_at": "string",
-    "fulfilled": "boolean"
-  }
-]
-
+ [
+   {
+     "wishlist_id": "number",
+     "patron_id": "number",
+     "title": "string",
+     "author": "string",
+     "requested_at": "string",
+     "fulfilled": "boolean"
+   }
+ ]
 ```
 ### 2. `/wishlist/{wishlist_id}/fulfill/` (POST)
 Admin endpoint to mark an acquisition request as fulfilled. Automatically marks all other pending requests for the same title as fulfilled as well.
@@ -286,13 +261,11 @@ Admin endpoint to mark an acquisition request as fulfilled. Automatically marks 
 **Response:**
 
  ```json
-[
-  {
-    "success": "boolean",
-    "message": "string",
-    "wishlist_id": "number"
-  }
-]
+ {
+   "success": "boolean",
+   "message": "string",
+   "wishlist_id": "number"
+ }
 ```
 ## 7. Placing a hold (Complex Endpoint)
 ### 1. `/holds/{book_id}` (POST)
@@ -301,45 +274,37 @@ A single book type can only have 5 active holds at a time. A single user can onl
 **Request:**
 
  ```json
-[
-  {
-    "patron_id": "number"
-  }
-]
+ {
+   "patron_id": "number"
+ }
 ```
 **Response:**
 
  ```json
-[
-  {
-  "success": "boolean",
-  "hold_id": "number",
-  "book_id": "number",
-  "expected_date": "date" //the estimated date the book will be avaliable.
-  }
-]
+ {
+   "success": "boolean",
+   "hold_id": "number",
+   "book_id": "number",
+   "expected_date": "string" //the estimated date the book will be avaliable.
+ }
 ```
 ### 2. `/checkout/{book_id}` (POST)
 Checkout the book once it is avaliable. If you are the patron who made the hold, the checkout will succeed.
 **Request**:  
 
 ```json
-[
-  { 
-  "patron_id": "int"
-  }
-]
+{ 
+  "patron_id": "number"
+}
 ```
 
 **Response**:  
 
 ```json
-[
-  {
+{
   "success": "boolean",
   "checkout_id": "number",
-  "due_date": "date",
+  "due_date": "string",
   "copy_id": "number"
-  }
-]
+}
 ```
