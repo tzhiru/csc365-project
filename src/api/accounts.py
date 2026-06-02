@@ -145,7 +145,7 @@ def get_accounts(search_page: str = "") -> AcctResponse:
     return AcctResponse(previous=previous, next=next, results=items)
 
 
-@router.get("/accounts/{account_id}/checkouts", response_model=List[CheckedOutBook])
+@router.get("/{account_id}/checkouts", response_model=List[CheckedOutBook])
 def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
     """
     Retrieve all books currently checked out by a specific patron.
@@ -196,7 +196,7 @@ def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
     return checkouts
 
 
-@router.get("/accounts/{account_id}", response_model=AccountItem)
+@router.get("/{account_id}", response_model=AccountItem)
 def get_patron_account(account_id: int) -> AccountItem:
     """
     Retrieve a specific patron account by ID.
