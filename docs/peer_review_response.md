@@ -27,8 +27,7 @@
 
 **Feedback 1 & 2:** In accounts.py, the router call “GET /accounts/list” should be renamed to “GET /accounts”. This would help with simplicity and keep the URI focused on using the next URI sublink to represent a single account (i.e. “/accounts/{account_id}”).
 
-
-**Response:** This feedback was addressed both routers have been changed.
+**Response:** 
 
 **Feedback 3:** In catalog.py, the two functions get_available_books() and get_books() should be placed under one router call. If the code is changed to allow for users to toggle between the two modes (see my 2nd code review comment), then the API will only need one “GET /catalog”. This change would help keep the next URI sublink reserved for specific catalog items.
 
@@ -42,9 +41,30 @@
 
 **Response:** This feedback was not addressed. We chose to keep admin functionality in admin.py to maintain a clear seperation.
 
-**Feedback 8:** In `admin.py`, `reset()` truncates the `books`, `authors`, and `publishers` tables, which could be inconvenient if they grow large, since that data would need to be re-added manually.
+**Feedback 6:** Checkout and return routes should be moved to inventory.py.
 
-**Response:** This feedback was not addressed. The `reset()` endpoint is intended solely as a development and testing tool to restore the database to a clean state. It is not meant to be used in production. Keeping it as a full reset is intentional so that developers can reliably test from a known baseline. We have noted this in the endpoint's docstring.
+**Response:** This feedback was not addressed. We acknowledge this as a valid organizational suggestion for a future version.
+
+**Feedback 7:** /inventory should be renamed to /copies.
+
+**Response:** This feedback was not addressed. The /inventory prefix covers both book-level and copy-level operations, so renaming it to /copies would be inaccurate
+
+**Feedback 8 & 9:** POST /inventory/remove_book/{book_id} should use DELETE and copies should be nested as DELETE /inventory/{book_id}/copies/{copy_id}.
+
+**Response:** This feedback was not addressed. While using DELETE is more RESTful and nested URIs better represent the relationship between books and copies, changing HTTP methods and route structures at this stage would require updating all existing test documentation and could break the deployed service. We acknowledge these as valid improvements for a future version.
+
+**Feedback 10:** In book_copies_have_status.py, server_default is set to "yes" instead of a boolean.
+
+**Response:** This feedback was addressed. The server_default value has been corrected from "yes" to "true" in the migration file.
+
+**Feedback 11:** The book_inventory table should be renamed to copies or book_copies.
+
+**Response:** This feedback was not addressed. Renaming this table would require a new migration and updates to every query across every file in the project. We would make this change in a future version.
+
+**Feedback 12:** The barcode value may be redundant since book copies already have a unique id.
+
+**Response:** This feedback was not addressed. The barcode field represents a physical barcode label that a librarian would scan on each book copy. The barcode represents a real-world physical label. We have noted this as a potential area of cleanup in a future version.
+
 
 ## Peer Review Feedback (David Talavera-Dean)
 ### Code review
