@@ -112,7 +112,8 @@ Thanks.
 This has been added.  
   
 12. I would added comments throughout the code that explains in full detail what ever file does so that its very clear what is suppose to happen.
-This will be addressed in the final version.
+
+Added docstrings and comments to the top of all main router files to make the endpoints and DB queries easier to understand.
 
 ### Schema/API design
 1. I would add a DELETE call for the account sections, it might be useful for any user who stops using your service or something like that
@@ -120,15 +121,16 @@ This will be addressed in the final version.
 We don't want to remove an already existing user, because the library keeps records of past checkouts and those records need to refer back to the users that completed those checkouts.  
   
 2. For the GET api call for the account section, I recommend also making phone number unique and checking to see no person has the same number because that might get confusing.
-This could be handled by adding a database-level uniqueness constraint on the phone column and/or checking for an existing phone number before creating a new account. was not implemented
 
+This has not been added. Families or households might want to use the same home phone number for multiple accounts (e.g. parent and child), so making it unique would prevent that.
+  
 3. For catalog API, I would add an API that allows you to see which books are checkout, so you guys can keep track of that
 
-This is partially handled. The accounts API currently has an endpoint that retrieves books currently checked out by a specific patron. A global view of all active checkouts across all patrons is noted as a future addition.
+Added `GET /checkout/active` to list all books that are currently checked out.
 
 4. For catalog API, I would also add a POST call to allow you to put puts into the catalog, this is separate from the inventory, so you can choose which books to offer to certain people. Like in the potion shop where certain customers have different taste
 
-Currently, the catalog API is mainly used as a searchable view of books available in the library. It does not currently include a POST endpoint for adding new books. Was not implemented.
+We have `POST /inventory/add_book` to add a book type separate from adding copies.
 
 5. catalog API for scearch should also call on an specific id, in case there are multiple books with the same title and author
   
@@ -140,11 +142,11 @@ The inventory functions allow us to delete book types and book copies from the c
   
 7. For admin API, I would recommend leaving as just admin rest and move the other API calls to other sections that way admin only deals with rest and it not conflicting with other databases
 
-The admin API is already focused only on administrative functionality. The current admin file only contains the reset endpoint, while account, catalog, checkout, holds, wishlist, and inventory routes are separated into their own API files.
+All non-admin routes have been moved out of `admin.py` so that it only handles the reset endpoint.
 
 8. For inventory API, you can also add a section to find a certain book or sections of books. This can help you get specifics on books to potentially help the customer better
 
-This is partially handled by the catalog API, which already supports searching by title and author.
+Added `GET /inventory/copies/{book_id}` to view all physical copies of a specific book.
 
 9. I am not sure what the point of remove book copy is for, if you have multiple of the same book, just add a qty column to your book section and update that rather than create another whole entry  
   
@@ -152,11 +154,11 @@ There are seperate tables for books and their individual copies (instead of just
   
 10. For inventory API, I would add a POST function to add books to your inventory, it might be easier this way
 
-Not addressed. Adding books and copies through the API was a planned feature not implemented within the project timeline.
+Already added `POST /inventory/add_book` and `POST /inventory/add_copy`.
 
 11. For inventory API,I would add a Get function to get either certain books from your inventory or all books, it might be easier this way4. Over all, everything seems good expect there is not much API calls for the books, I recommend you add some because it might help simplify the project and not have a bunch of for loops everywhere to try to find books
 
-Addressed. The GET /catalog/full_catalog/ endpoint returns all books with total and available copy counts. The GET /catalog/search/ endpoint allows filtering by title and author. The GET /catalog/available/ endpoint shows only books with available copies.
+Added `GET /inventory/copies/{book_id}` to get copies for a book. Standard searching is also handled in `/catalog/search/`.
 
 12. Not sure the purpose of default API call, I would remove it if I where you
       

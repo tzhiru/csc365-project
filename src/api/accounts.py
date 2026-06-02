@@ -1,3 +1,8 @@
+"""
+API router for managing patron accounts.
+Includes endpoints for creating accounts, listing all accounts (with pagination),
+and retrieving detailed information and checkout histories for specific accounts.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional

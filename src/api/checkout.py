@@ -1,5 +1,11 @@
+"""
+API router for managing book checkouts and returns.
+Includes endpoints for checking out books (with hold/priority validation)
+and returning books, plus viewing currently active checkouts.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from typing import List
 from src.api import auth
 import sqlalchemy
 from src import database as db
@@ -28,6 +34,17 @@ class ReturnResponse(BaseModel):
     checkout_id: int
     patron_id: int
     copy_id: int
+
+
+class ActiveCheckoutItem(BaseModel):
+    checkout_id: int
+    book_id: int
+    title: str
+    author: str
+    patron_id: int
+    patron_name: str
+    copy_id: int
+    due_date: str
 
 
 @router.post("/{book_id}", response_model=CheckoutResponse)
@@ -179,3 +196,47 @@ def return_book(book_copy_id: int):
         patron_id=find_checkout.patron_id,
         copy_id=book_copy_id,
     )
+
+
+@router.get("/active", response_model=List[ActiveCheckoutItem])
+def get_active_checkouts():
+    """
+    Retrieves a list of all active checkouts in the library system.
+    """
+    items = []
+    with db.engine.begin() as connection:
+        results = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT c.id AS checkout_id,
+                       b.id AS book_id,
+                       b.title,
+                       concat(a.first_name, ' ', a.last_name) AS author,
+                       pa.id AS patron_id,
+                       concat(pa.first_name, ' ', pa.last_name) AS patron_name,
+                       bi.id AS copy_id,
+                       c.due_date
+                FROM checkouts c
+                JOIN book_inventory bi ON c.book_inventory_id = bi.id
+                JOIN books b ON bi.book_id = b.id
+                JOIN authors a ON b.author_id = a.id
+                JOIN patron_accounts pa ON c.patron_id = pa.id
+                WHERE c.returned_at IS NULL
+                ORDER BY c.due_date ASC
+                """
+            )
+        )
+        for row in results:
+            items.append(
+                ActiveCheckoutItem(
+                    checkout_id=row.checkout_id,
+                    book_id=row.book_id,
+                    title=row.title,
+                    author=row.author,
+                    patron_id=row.patron_id,
+                    patron_name=row.patron_name,
+                    copy_id=row.copy_id,
+                    due_date=str(row.due_date),
+                )
+            )
+    return items
