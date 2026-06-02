@@ -212,4 +212,4 @@ Planning:
 Planning Time: 0.392 ms
 Execution Time: 67.638 ms
 ```
-This improved the time as well. 
+This improved the time as well, as it now uses an index scan for the search parameter.
