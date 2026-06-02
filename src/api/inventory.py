@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException
+from pydantic import BaseModel
 import sqlalchemy
 from src.api import auth
 from src import database as db
@@ -8,6 +9,106 @@ router = APIRouter(
     tags=["inventory"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
+
+class BookRequest(BaseModel):
+    title: str
+    author_id: int
+    publisher_id: int
+    date_published: str
+
+
+class BookCopyRequest(BaseModel):
+    book_id: int
+    barcode: int
+
+
+@router.post(
+    "/add_book",
+    tags=["inventory"],
+    status_code=status.HTTP_201_CREATED,
+)
+def add_book(book: BookRequest):
+    """
+    Add a new book type to the catalog.
+    """
+    with db.engine.begin() as connection:
+        author_exists = connection.execute(
+            sqlalchemy.text("SELECT 1 FROM authors WHERE id = :author_id"),
+            {"author_id": book.author_id},
+        ).scalar()
+        if not author_exists:
+            raise HTTPException(status_code=404, detail="Author not found")
+
+        pub_exists = connection.execute(
+            sqlalchemy.text("SELECT 1 FROM publishers WHERE id = :publisher_id"),
+            {"publisher_id": book.publisher_id},
+        ).scalar()
+        if not pub_exists:
+            raise HTTPException(status_code=404, detail="Publisher not found")
+
+        book_id = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO books (title, author_id, publisher_id, date_published)
+                VALUES (:title, :author_id, :publisher_id, :date_published)
+                RETURNING id
+                """
+            ),
+            {
+                "title": book.title,
+                "author_id": book.author_id,
+                "publisher_id": book.publisher_id,
+                "date_published": book.date_published,
+            },
+        ).scalar_one()
+
+        return {"book_id": book_id, "success": True}
+
+
+@router.post(
+    "/add_copy",
+    tags=["inventory"],
+    status_code=status.HTTP_201_CREATED,
+)
+def add_book_copy(copy: BookCopyRequest):
+    """
+    Add a physical copy of an existing book to the inventory.
+    """
+    with db.engine.begin() as connection:
+        book_exists = connection.execute(
+            sqlalchemy.text("SELECT 1 FROM books WHERE id = :book_id"),
+            {"book_id": copy.book_id},
+        ).scalar()
+        if not book_exists:
+            raise HTTPException(status_code=404, detail="Book not found")
+
+        barcode_exists = connection.execute(
+            sqlalchemy.text("SELECT 1 FROM book_inventory WHERE barcode = :barcode"),
+            {"barcode": copy.barcode},
+        ).scalar()
+        if barcode_exists:
+            raise HTTPException(
+                status_code=400, detail="Barcode already exists in inventory"
+            )
+
+        copy_id = connection.execute(
+            sqlalchemy.text(
+                """
+                INSERT INTO book_inventory (book_id, barcode, active)
+                VALUES (:book_id, :barcode, TRUE)
+                RETURNING id
+                """
+            ),
+            {
+                "book_id": copy.book_id,
+                "barcode": copy.barcode,
+            },
+        ).scalar_one()
+
+        return {"copy_id": copy_id, "success": True}
+
+
 
 
 @router.post(

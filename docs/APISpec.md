@@ -116,38 +116,56 @@ Displays all books currently checked out under a specific account
 ]
 ```
 ## 4. Editing the library catalog (admin functions)  
-### 1. `/catalog/add` (POST)
-Adds a new item to the library catalog.
+### 1. `/inventory/add_book` (POST)
+Adds a new book type to the library catalog.
 
 **Request**:
 ```json
-  {
-    "name": "number",
-    "author": "string",
-    "description": "string",
-    "category": "string",
-    "quantity_available": "number",
-  }
+{
+  "title": "string",
+  "author_id": "number",
+  "publisher_id": "number",
+  "date_published": "string"
+}
 ```
 **Response**:  
-
 ```json
 {
-    "book_id" : "number"
-    "success": "boolean"
+  "book_id": "number",
+  "success": "boolean"
 }
 ```
 
-### 2. `/inventory/remove_book/{book_id}/` (DELETE)
-Removes a book from the library catalog.
+### 2. `/inventory/add_copy` (POST)
+Adds a physical copy of an existing book to the inventory.
 
-**Response**:  
-
+**Request**:
 ```json
 {
-    "success": "boolean"
+  "book_id": "number",
+  "barcode": "number"
 }
 ```
+**Response**:  
+```json
+{
+  "copy_id": "number",
+  "success": "boolean"
+}
+```
+
+### 3. `/inventory/remove_book/{book_id}` (POST)
+Removes a book from the library catalog by marking all active copies as inactive. Fails if there are copies of the book currently checked out.
+
+**Response**:  
+(HTTP 204 No Content)
+
+### 4. `/inventory/remove_copy/{book_copy_id}` (POST)
+Marks a book copy from inventory as inactive/unavailable.
+
+**Response**:  
+(HTTP 204 No Content)
+
 
 ## 5. Viewing user account information/checked out books (admin functions) 
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
