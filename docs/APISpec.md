@@ -23,27 +23,9 @@ Creates an account for a new patron and returns the account id to be used for ch
 ]
 ```
 ## 2. Checking out books  
-1. View catalog of avaliable books
-2. Search catalog for specific items
-3. Checkout book (add to user's account's list of checked out books)
-### 1. `/catalog/avaliable/` (GET)
-Displays all books avaliable for checkout.  
-  
-**Response:**  
-```json
-[
-  {
-    "book_id": "number",
-    "name": "string",
-    "author": "string",
-    "description": "string",
-    "category": "string",
-    "average_rating": "float", //between 0 and 10
-    "quantity_avaliable": "number",
-  }
-]
-```
-### 2. `/catalog/search/` (GET)
+1. Search catalog for specific items
+2. Checkout book (add to user's account's list of checked out books)
+### 1. `/catalog/search/` (GET)
 Searches the library catalog via specific parameters. Returns a list of all matching search results.  
 **Request:**  
 ```json
@@ -51,6 +33,8 @@ Searches the library catalog via specific parameters. Returns a list of all matc
   {
     "title": "string", //optional
     "author": "string", //optional
+    "available_only": "boolean" //defaults to True,
+    "search_page": "string" //optional
   }
 ]
 ```
@@ -58,13 +42,18 @@ Searches the library catalog via specific parameters. Returns a list of all matc
 ```json
 [
   {
-    "book_id": "number",
-    "title": "string",
-    "author_first": "string",
-    "author_last": "string",
-    "copies_available": "number",
-    "total_copies": "number",
-    "date_published": "string"
+    "previous": "string",
+    "next": "string",
+    "results": [
+      {
+        "book_id": "number",
+        "title": "string",
+        "author": "string",
+        "copies_available": "number",
+        "total_copies": "number",
+        "date_published": "string"
+      }
+    ]
   }
 ]
 ```
@@ -162,23 +151,27 @@ Removes a book from the library catalog.
 
 ## 5. Viewing user account information/checked out books (admin functions) 
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
-### 1. `/admin/accounts/list` (GET)
+### 1. `/accounts/list/` (GET)
 Displays a list of all library patron accounts.
 
 **Response**:  
 
 ```json
-[
- {
-    "account_id" : "string",
-    "first_name" : "string",
-    "last_name" : "string",
-    "address" : "string",
-    "phone_number": "string"
- }
-]
+{
+  "previous": "string",
+  "next": "string",
+  "results": [
+    {
+      "patron_id": "number",
+      "first_name": "string",
+      "last_name": "string",
+      "phone_number": "string",
+      "address": "string"
+    }
+  ]
+}
 ```
-### 2. `/admin/accounts/{account_id}/` (GET)
+### 2. `/accounts/{account_id}/` (GET)
 Displays detailed information for a specific patron account.
  
 **Response**:
@@ -192,7 +185,7 @@ Displays detailed information for a specific patron account.
     "phone_number": "string"
  }
 ```
-### 3. `/admin/accounts/{account_id}/checkouts/` (GET)
+### 3. `/accounts/{account_id}/checkouts/` (GET)
  
 **Response**:
  
@@ -208,48 +201,7 @@ Displays detailed information for a specific patron account.
 ]
 
 ```
-## 6. Viewing and leaving reviews on books
-Allows patrons to view ratings and reviews left by other users, and submit their own ratings for books they have previously checked out.
-
-### 1. `/catalog/{book_id}/reviews/` (GET)
-Retrieves all ratings and written reviews for a specific book.
-
-**Response:**
-
- ```json
-[
-  {
-    "review_id": "string",
-    "account_id": "string",
-    "rating": "number", 
-    "review_text": "string",
-    "date_posted": "string"
-  }
-]
-```
-### 2. `/catalog/{book_id}/reviews/` (POST)
-Allows a patron to leave a 1-5 star rating and an optional text review for a book they have borrowed. The API will check to ensure the user has actually checked out this book before and hasn't already reviewed it.
-
-**Request:**
-
- ```json
-{
-  "account_id": "string",
-  "rating": "number",
-  "review_text": "string"
-}
-```
-**Response:**
-
- ```json
-{
-  "success": "boolean",
-  "review_id": "string",
-  "message": "string"
-}
-
-```
-## 7. Acquisition Request / Wishlist (Complex Endpoint)
+## 6. Acquisition Request / Wishlist (Complex Endpoint)
 Allows a patron to submit a request for a book that is not currently in the library catalog. This endpoint is complex because it performs multiple reads before writing as it verifies the patron exists, checks whether the book already exists in the catalog, checks whether the patron has already submitted a request for this title, and checks whether other patrons have also requested it. Also, the response message adapts based on existing demand for the title.
 
 ### 1. `/wishlist/request/` (POST)
@@ -309,7 +261,7 @@ Admin endpoint to mark an acquisition request as fulfilled. Automatically marks 
   }
 ]
 ```
-## 8. Placing a hold (Complex Endpoint)
+## 7. Placing a hold (Complex Endpoint)
 ### 1. `/holds/{book_id}` (POST)
 Place a hold on a book that currently has all copies checked out.  
 A single book type can only have 5 active holds at a time. A single user can only have 10 active holds at a time. The hold request will fail if these conditions are not met, or if the targeted book is already avaliable.
