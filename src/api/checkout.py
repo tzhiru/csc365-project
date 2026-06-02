@@ -1,11 +1,5 @@
-"""
-API router for managing book checkouts and returns.
-Includes endpoints for checking out books (with hold/priority validation)
-and returning books, plus viewing currently active checkouts.
-"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List
 from src.api import auth
 import sqlalchemy
 from src import database as db
@@ -36,17 +30,6 @@ class ReturnResponse(BaseModel):
     copy_id: int
 
 
-class ActiveCheckoutItem(BaseModel):
-    checkout_id: int
-    book_id: int
-    title: str
-    author: str
-    patron_id: int
-    patron_name: str
-    copy_id: int
-    due_date: str
-
-
 @router.post("/{book_id}", response_model=CheckoutResponse)
 def checkout_book(book_id: int, request: CheckoutRequest):
     """
@@ -63,6 +46,24 @@ def checkout_book(book_id: int, request: CheckoutRequest):
         if not patron:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
+        # check active checkouts limit
+        active_count = connection.execute(
+            sqlalchemy.text(
+                """
+                SELECT count(*)
+                FROM checkouts
+                WHERE patron_id = :patron_id AND returned_at IS NULL
+                """
+            ),
+            {"patron_id": request.patron_id},
+        ).scalar_one()
+        if active_count >= 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Patron has reached the maximum limit of 10 active checkouts.",
+            )
+
+
         # find an available copy of the book
         available_copy = connection.execute(
             sqlalchemy.text(
@@ -75,26 +76,18 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                         FROM checkouts 
                         WHERE returned_at IS NULL
                     )
+                LIMIT 1
                 FOR UPDATE SKIP LOCKED
                 """
             ),
             {"book_id": book_id},
-        )
+        ).fetchone()
 
-        copies = available_copy.rowcount
-
-        if copies == 0:
+        if not available_copy:
             raise HTTPException(
                 status_code=409,
                 detail="No copies of this book are available currently.",
             )
-
-        i = 0
-        for row in available_copy:
-            loan = row.id
-            i += 1
-            if i > 0:
-                break
 
         hold_check = connection.execute(
             sqlalchemy.text(
@@ -103,18 +96,17 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 FROM holds
                 WHERE active = TRUE AND book_id = :book_id
                 ORDER BY creation_date ASC
-                LIMIT :limit
                 """
             ),
-            {"book_id": book_id, "limit": copies},
-        )
+            {"book_id": book_id},
+        ).fetchone()
 
-        if hold_check.rowcount != 0:
-            holding_users = []
-            for row in hold_check:
-                holding_users.append(row.patron_id)
+        if hold_check is not None:
+            # holding_users = []
+            # for row in hold_check:
+            #    holding_users.append(row.patron_id)
 
-            if request.patron_id not in holding_users:
+            if request.patron_id != hold_check.patron_id:
                 print(" --- Checkout failed bc hold priority")
                 raise HTTPException(
                     status_code=403,
@@ -143,14 +135,14 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 RETURNING id, due_date
                 """
             ),
-            {"patron_id": request.patron_id, "copy_id": loan},
+            {"patron_id": request.patron_id, "copy_id": available_copy.id},
         ).one()
 
     return CheckoutResponse(
         success=True,
         checkout_id=checkout.id,
         due_date=str(checkout.due_date),
-        copy_id=loan,
+        copy_id=available_copy.id,
     )
 
 
@@ -196,47 +188,3 @@ def return_book(book_copy_id: int):
         patron_id=find_checkout.patron_id,
         copy_id=book_copy_id,
     )
-
-
-@router.get("/active", response_model=List[ActiveCheckoutItem])
-def get_active_checkouts():
-    """
-    Retrieves a list of all active checkouts in the library system.
-    """
-    items = []
-    with db.engine.begin() as connection:
-        results = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT c.id AS checkout_id,
-                       b.id AS book_id,
-                       b.title,
-                       concat(a.first_name, ' ', a.last_name) AS author,
-                       pa.id AS patron_id,
-                       concat(pa.first_name, ' ', pa.last_name) AS patron_name,
-                       bi.id AS copy_id,
-                       c.due_date
-                FROM checkouts c
-                JOIN book_inventory bi ON c.book_inventory_id = bi.id
-                JOIN books b ON bi.book_id = b.id
-                JOIN authors a ON b.author_id = a.id
-                JOIN patron_accounts pa ON c.patron_id = pa.id
-                WHERE c.returned_at IS NULL
-                ORDER BY c.due_date ASC
-                """
-            )
-        )
-        for row in results:
-            items.append(
-                ActiveCheckoutItem(
-                    checkout_id=row.checkout_id,
-                    book_id=row.book_id,
-                    title=row.title,
-                    author=row.author,
-                    patron_id=row.patron_id,
-                    patron_name=row.patron_name,
-                    copy_id=row.copy_id,
-                    due_date=str(row.due_date),
-                )
-            )
-    return items

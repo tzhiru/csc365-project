@@ -57,6 +57,21 @@ Searches the library catalog via specific parameters. Returns a list of all matc
   }
 ]
 ```
+
+### 2. `/catalog/{book_id}` (GET)
+Retrieves detailed information for a specific book by ID.
+
+**Response**:
+```json
+{
+  "book_id": "number",
+  "title": "string",
+  "author": "string",
+  "copies_available": "number",
+  "total_copies": "number",
+  "date_published": "string"
+}
+```
 ### 3. `/checkout/{book_id}/` (POST)  
 Checks out the specified copy of a book under the user's account.  
   
@@ -166,25 +181,10 @@ Marks a book copy from inventory as inactive/unavailable.
 **Response**:  
 (HTTP 204 No Content)
 
-### 5. `/inventory/copies/{book_id}` (GET)
-Retrieves all physical copy records for a specific book type.
-
-**Response**:
-```json
-[
-  {
-    "copy_id": "number",
-    "barcode": "number",
-    "added_at": "string",
-    "active": "boolean"
-  }
-]
-```
-
 
 ## 5. Viewing user account information/checked out books (admin functions) 
 Allows library administrators to view patron account details and the books currently checked out under a patron’s account.
-### 1. `/accounts/list/` (GET)
+### 1. `/accounts/` (GET)
 Displays a list of all library patron accounts.
 
 **Response**:  
@@ -232,27 +232,6 @@ Displays detailed information for a specific patron account.
     "due_date": "string"
  }
 ]
-```
-
-### 4. `/checkout/active` (GET)
-Displays all books currently checked out globally in the library system.
-
-**Response:**
-```json
-[
-  {
-    "checkout_id": "number",
-    "book_id": "number",
-    "title": "string",
-    "author": "string",
-    "patron_id": "number",
-    "patron_name": "string",
-    "copy_id": "number",
-    "due_date": "string"
-  }
-]
-```
-
 
 ```
 ## 6. Acquisition Request / Wishlist (Complex Endpoint)

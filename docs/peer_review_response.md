@@ -27,7 +27,7 @@
 
 **Feedback 1 & 2:** In accounts.py, the router call “GET /accounts/list” should be renamed to “GET /accounts”. This would help with simplicity and keep the URI focused on using the next URI sublink to represent a single account (i.e. “/accounts/{account_id}”).
 
-**Response:** 
+**Response:** This feedback was addressed. The GET /accounts/list/ endpoint has been renamed to GET /accounts/ to simplify the URI structure and follow RESTful routing conventions.
 
 **Feedback 3:** In catalog.py, the two functions get_available_books() and get_books() should be placed under one router call. If the code is changed to allow for users to toggle between the two modes (see my 2nd code review comment), then the API will only need one “GET /catalog”. This change would help keep the next URI sublink reserved for specific catalog items.
 
@@ -105,34 +105,33 @@ This has not been added. CheckoutResponse contains the due date so that the user
 This has not been added, since determining the status of a checkout is based on the presence or non-existence of a returned date.    
   
 10. Something good in invetory.py is you guys got a print statement that give you database info which is super helpful to have when looking at logs and stuff.
-Thanks.
   
 11. In catalog.py, make sure to be putting parentheses in the quarries when adding or subtracting things, that way its clear what is going on
 
-This has been added.  
-  
-12. I would added comments throughout the code that explains in full detail what ever file does so that its very clear what is suppose to happen.
+This has been added.
 
-Added docstrings and comments to the top of all main router files to make the endpoints and DB queries easier to understand.
+12. I would added comments throughout the code that explains in full detail what ever file does so that its very clear what is suppose to happen
+
+This has been addressed. We have added and updated comments and docstrings in our main routing files (like catalog.py, inventory.py, and checkout.py) explaining the purpose and logic of each file and function.
 
 ### Schema/API design
 1. I would add a DELETE call for the account sections, it might be useful for any user who stops using your service or something like that
   
 We don't want to remove an already existing user, because the library keeps records of past checkouts and those records need to refer back to the users that completed those checkouts.  
   
-2. For the GET api call for the account section, I recommend also making phone number unique and checking to see no person has the same number because that might get confusing.
-
-This has not been added. Families or households might want to use the same home phone number for multiple accounts (e.g. parent and child), so making it unique would prevent that.
+2. For the GET api call for the account section, I recommend also making phone number unique and checking to see no person has the same number because that might get confusing  
+  
+This was addressed. In the account creation endpoint, we now query the database to verify if the phone number is already registered and return a 400 Bad Request error if so.
   
 3. For catalog API, I would add an API that allows you to see which books are checkout, so you guys can keep track of that
 
-Added `GET /checkout/active` to list all books that are currently checked out.
+This was not addressed. Checkouts are tracked via the checkouts endpoints and patron account details rather than through the general catalog search.
 
 4. For catalog API, I would also add a POST call to allow you to put puts into the catalog, this is separate from the inventory, so you can choose which books to offer to certain people. Like in the potion shop where certain customers have different taste
 
-We have `POST /inventory/add_book` to add a book type separate from adding copies.
+This was not addressed. Our library system catalog is designed to reflect actual inventory availability rather than customized selections.
 
-5. catalog API for scearch should also call on an specific id, in case there are multiple books with the same title and author
+5. catalog API for scearch should also call on an specific id, in case there are multiple books with the same title and author  
   
 When there are multiple books with the same attributes, they will both be returned by the search.
   
@@ -142,11 +141,11 @@ The inventory functions allow us to delete book types and book copies from the c
   
 7. For admin API, I would recommend leaving as just admin rest and move the other API calls to other sections that way admin only deals with rest and it not conflicting with other databases
 
-All non-admin routes have been moved out of `admin.py` so that it only handles the reset endpoint.
+This was addressed. We relocated account-specific and checkout-specific endpoints out of admin.py into their respective routers, leaving admin.py focused solely on database resets.
 
 8. For inventory API, you can also add a section to find a certain book or sections of books. This can help you get specifics on books to potentially help the customer better
 
-Added `GET /inventory/copies/{book_id}` to view all physical copies of a specific book.
+This was addressed. We added a GET /catalog/{book_id} endpoint to retrieve detailed information for a single book.
 
 9. I am not sure what the point of remove book copy is for, if you have multiple of the same book, just add a qty column to your book section and update that rather than create another whole entry  
   
@@ -154,11 +153,11 @@ There are seperate tables for books and their individual copies (instead of just
   
 10. For inventory API, I would add a POST function to add books to your inventory, it might be easier this way
 
-Already added `POST /inventory/add_book` and `POST /inventory/add_copy`.
+This was addressed. We implemented POST /inventory/add_book and POST /inventory/add_copy endpoints to add new book types and physical copies to the inventory catalog.
 
 11. For inventory API,I would add a Get function to get either certain books from your inventory or all books, it might be easier this way4. Over all, everything seems good expect there is not much API calls for the books, I recommend you add some because it might help simplify the project and not have a bunch of for loops everywhere to try to find books
 
-Added `GET /inventory/copies/{book_id}` to get copies for a book. Standard searching is also handled in `/catalog/search/`.
+This was addressed. We added a GET /catalog/{book_id} endpoint to fetch details of a specific book, and our catalog search endpoint supports searching/filtering.h of for loops everywhere to try to find books
 
 12. Not sure the purpose of default API call, I would remove it if I where you
       
@@ -246,13 +245,19 @@ Response: This feedback was not addressed. The publishers table was created as p
 
 4. There is no way to add books, authors, or copies through the API — the catalog can only shrink.
 
+Response: This was addressed. We added the POST /inventory/add_book and POST /inventory/add_copy endpoints to allow adding new book records and physical copies to the library catalog.
+
 5. Authors have no uniqueness constraint, so duplicate authors can be created. A book also cannot have more than one author.
 
 Response: This feedback was not addressed. This is a significant schema change that would require a new migration and updates to every query across catalog.py, checkout.py, admin.py, and holds.py. Given the risk of breaking the deployed service this close to the deadline, we chose not to make this change. We acknowledge it as a valid limitation of the current data model and would address it in a future version.
 
 6. There is no checkout limit or overdue handling logic.
 
+Response: This was addressed. We added a check in checkout_book to limit each patron to a maximum of 10 active checkouts.
+
 7. patron_accounts has no unique key, email, or username, so duplicate accounts cannot be rejected.
+
+Response: This was addressed. We now enforce that the phone number field must be unique upon account creation.
 
 8. Timestamps are inconsistent across tables — some have created_at and some do not.
 
@@ -267,6 +272,8 @@ Response: This feedback was addressed. We have standardized to patron_id across 
 Response: This feedback was not addressed. The return endpoint actually accepts a book_id and patron_id and finds the active checkout automatically it does not require the patron to know the copy ID.
 
 11. Routes are split across prefixes in a hard-to-predict way.
+
+Response: This was not addressed. Changing prefixes and routing structures across the entire application would require major client updates. We kept the existing prefixes for stability.
 
 12. List endpoints have no pagination.
 

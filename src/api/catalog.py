@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlalchemy
@@ -102,3 +102,33 @@ def search_catalog(
         next = None
 
     return PageResponse(previous=previous, next=next, results=items)
+
+
+@router.get("/{book_id}", response_model=CatalogItem, tags=["catalog"])
+def get_book_details(book_id: int):
+    """
+    Retrieve detailed information for a specific book by ID.
+    """
+    with db.engine.connect() as conn:
+        book = conn.execute(
+            sqlalchemy.select(
+                db.book_log.c.id,
+                db.book_log.c.title,
+                db.book_log.c.author,
+                db.book_log.c.copies_available,
+                db.book_log.c.total_copies,
+                db.book_log.c.date_published,
+            ).where(db.book_log.c.id == book_id)
+        ).fetchone()
+
+        if not book:
+            raise HTTPException(status_code=404, detail="Book not found")
+
+        return CatalogItem(
+            book_id=book.id,
+            title=book.title,
+            author=book.author,
+            copies_available=book.copies_available,
+            total_copies=book.total_copies,
+            date_published=str(book.date_published),
+        )

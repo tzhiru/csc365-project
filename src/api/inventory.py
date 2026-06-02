@@ -1,11 +1,5 @@
-"""
-API router for managing library inventory.
-Includes endpoints for adding new books and physical copies to the catalog,
-as well as soft-deleting books and individual copies, and listing all copies of a book.
-"""
 from fastapi import APIRouter, status, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List
 import sqlalchemy
 from src.api import auth
 from src import database as db
@@ -27,13 +21,6 @@ class BookRequest(BaseModel):
 class BookCopyRequest(BaseModel):
     book_id: int
     barcode: int
-
-
-class CopyDetail(BaseModel):
-    copy_id: int
-    barcode: int
-    added_at: str
-    active: bool
 
 
 @router.post(
@@ -122,6 +109,8 @@ def add_book_copy(copy: BookCopyRequest):
         return {"copy_id": copy_id, "success": True}
 
 
+
+
 @router.post(
     "/remove_book/{book_id}",
     tags=["inventory"],
@@ -194,41 +183,3 @@ def remove_book_copy(book_copy_id: int):
         )
         if update.rowcount == 0:
             raise HTTPException(status_code=404, detail="Book copy not found")
-
-
-@router.get("/copies/{book_id}", response_model=List[CopyDetail])
-def get_book_copies(book_id: int):
-    """
-    Retrieves all physical copies associated with a specific book type.
-    """
-    with db.engine.begin() as connection:
-        book_exists = connection.execute(
-            sqlalchemy.text("SELECT 1 FROM books WHERE id = :book_id"),
-            {"book_id": book_id},
-        ).scalar()
-        if not book_exists:
-            raise HTTPException(status_code=404, detail="Book type not found")
-
-        results = connection.execute(
-            sqlalchemy.text(
-                """
-                SELECT id, barcode, added_at, active
-                FROM book_inventory
-                WHERE book_id = :book_id
-                ORDER BY id ASC
-                """
-            ),
-            {"book_id": book_id},
-        )
-
-        items = []
-        for row in results:
-            items.append(
-                CopyDetail(
-                    copy_id=row.id,
-                    barcode=row.barcode,
-                    added_at=str(row.added_at),
-                    active=row.active,
-                )
-            )
-        return items

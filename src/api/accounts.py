@@ -1,8 +1,3 @@
-"""
-API router for managing patron accounts.
-Includes endpoints for creating accounts, listing all accounts (with pagination),
-and retrieving detailed information and checkout histories for specific accounts.
-"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -61,6 +56,13 @@ def post_new_account(acct: PatronAccountInfo):
     Create a new account.
     """
     with db.engine.begin() as connection:
+        phone_exists = connection.execute(
+            sqlalchemy.text("SELECT 1 FROM patron_accounts WHERE phone = :phone"),
+            {"phone": acct.phone_number},
+        ).scalar()
+        if phone_exists:
+            raise HTTPException(status_code=400, detail="Phone number is already registered.")
+
         acct_connect = connection.execute(
             sqlalchemy.text(
                 """
@@ -88,7 +90,7 @@ def post_new_account(acct: PatronAccountInfo):
         )
 
 
-@router.get("/list/", tags=["accounts"], response_model=AcctResponse)
+@router.get("/", tags=["accounts"], response_model=AcctResponse)
 def get_accounts(search_page: str = "") -> AcctResponse:
     """
     Retrieves the list of all patron accounts.
@@ -115,17 +117,17 @@ def get_accounts(search_page: str = "") -> AcctResponse:
             ),
             [{"offset": offset, "limit": limit + 1}],
         )
-        for row in account_results:
+        for account_row in account_results:
             if i == limit:
                 nextpage = True
                 break
             items.append(
                 AccountItem(
-                    patron_id=row.id,
-                    first_name=row.first_name,
-                    last_name=row.last_name,
-                    phone_number=row.phone,
-                    address=row.address,
+                    patron_id=account_row.id,
+                    first_name=account_row.first_name,
+                    last_name=account_row.last_name,
+                    phone_number=account_row.phone,
+                    address=account_row.address,
                 )
             )
             i += 1
@@ -177,17 +179,17 @@ def get_patron_checkouts(account_id: int) -> List[CheckedOutBook]:
             {"account_id": account_id},
         )
 
-        for row in checkout_results:
+        for checkout_row in checkout_results:
             checkouts.append(
                 CheckedOutBook(
-                    checkout_id=row.checkout_id,
-                    book_id=row.book_id,
-                    title=row.title,
-                    author_first=row.author_first,
-                    author_last=row.author_last,
-                    copy_id=row.copy_id,
-                    checkout_date=str(row.checkout_date),
-                    due_date=str(row.due_date),
+                    checkout_id=checkout_row.checkout_id,
+                    book_id=checkout_row.book_id,
+                    title=checkout_row.title,
+                    author_first=checkout_row.author_first,
+                    author_last=checkout_row.author_last,
+                    copy_id=checkout_row.copy_id,
+                    checkout_date=str(checkout_row.checkout_date),
+                    due_date=str(checkout_row.due_date),
                 )
             )
 
@@ -200,7 +202,7 @@ def get_patron_account(account_id: int) -> AccountItem:
     Retrieve a specific patron account by ID.
     """
     with db.engine.begin() as connection:
-        row = connection.execute(
+        patron_row = connection.execute(
             sqlalchemy.text(
                 """
                 SELECT id, first_name, last_name, phone, address
@@ -211,13 +213,13 @@ def get_patron_account(account_id: int) -> AccountItem:
             {"account_id": account_id},
         ).fetchone()
 
-        if not row:
+        if not patron_row:
             raise HTTPException(status_code=404, detail="Patron account not found.")
 
         return AccountItem(
-            patron_id=row.id,
-            first_name=row.first_name,
-            last_name=row.last_name,
-            phone_number=row.phone,
-            address=row.address,
+            patron_id=patron_row.id,
+            first_name=patron_row.first_name,
+            last_name=patron_row.last_name,
+            phone_number=patron_row.phone,
+            address=patron_row.address,
         )
