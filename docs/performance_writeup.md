@@ -18,7 +18,7 @@ Time in ms each endpoint took to execute via curl.
 **GET `/accounts/{account_id}`** 10.861 ms  
 **GET `/accounts/{account_id}/checkouts`** 38.865 ms  
   
-**GET `/catalog/search/`** with both search attributes: 300.364 ms (Longest)  
+**GET `/catalog/search/`** with one search attribute: 300.364 ms (Longest)  
   
 **POST `/wishlist/request/`** 23.308 ms  
 **GET `/wishlist/`**  33.760 ms  
