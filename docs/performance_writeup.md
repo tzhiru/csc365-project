@@ -13,26 +13,28 @@ This ended up being more than a million (whoops). This ratio seemed realistic en
 ## Performance results  
 Time in ms each endpoint took to execute via curl.  
   
-**GET `/accounts/list/`** 26.302 ms  
+**GET `/accounts/`** 26.302 ms  
 **POST `/accounts/create/`** 12.399 ms  
+**GET `/accounts/{account_id}`** 10.861 ms  
+**GET `/accounts/{account_id}/checkouts`** 38.865 ms  
   
-**GET `/catalog/search/`** with both search attributes: 87.212 ms (Longest)  
+**GET `/catalog/search/`** with both search attributes: 300.364 ms (Longest)  
   
 **POST `/wishlist/request/`** 23.308 ms  
 **GET `/wishlist/`**  33.760 ms  
 **POST `/wishlist/{wishlist_id}/fufill/`** 35.544 ms  
     
 **POST `/admin/reset/`** Ommitted from tests since it is a test endpoint that clears out the data from every single table.  
-**GET `/admin/accounts/{account_id}`** 10.861 ms  
-**GET `/admin/accounts/{account_id}/checkouts`** 38.865 ms  
-
+  
 **POST `/checkout/{book_id}/`** 82.069 ms  
 **POST `/checkout/return/{book_copy_id}`** 54.217 ms  
 
 **POST `/holds/{book_id}/`** 57.132 ms  
 **GET `/holds/view_holds/{book_id}`** 31.843 ms  
 
-**POST `/inventory/remove_book/{book_id}`** 135.799 ms  
+**POST `/inventory/add_book/{book_id}`** 79.036 ms  
+**POST `/inventory/add_book_copy/{book_copy_id}`** 33.107 ms  
+**POST `/inventory/remove_book/{book_id}`** 91.445 ms  
 **POST `/inventory/remove_book_copy/{book_copy_id}`** 41.792 ms  
 ## Performance tuning
 `/catalog/search/` runs at varying speeds depending on the amount of search attributes.
