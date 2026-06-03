@@ -57,13 +57,14 @@ def checkout_book(book_id: int, request: CheckoutRequest):
             ),
             {"patron_id": request.patron_id},
         ).scalar_one()
+
         if active_count >= 10:
             raise HTTPException(
                 status_code=400,
                 detail="Patron has reached the maximum limit of 10 active checkouts.",
             )
 
-        # find an available copy of the book
+        # count available copies
         available_copy = connection.execute(
             sqlalchemy.text(
                 """
@@ -75,19 +76,29 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                         FROM checkouts 
                         WHERE returned_at IS NULL
                     )
-                LIMIT 1
                 FOR UPDATE SKIP LOCKED
                 """
             ),
             {"book_id": book_id},
-        ).fetchone()
+        )
 
-        if not available_copy:
+        copies = available_copy.rowcount
+
+        if copies == 0:
             raise HTTPException(
                 status_code=409,
                 detail="No copies of this book are available currently.",
             )
 
+        # get first available copy
+        i = 0
+        for row in available_copy:
+            loan = row.id
+            i += 1
+            if i > 0:
+                break
+
+        # get as many holds as there are available copies
         hold_check = connection.execute(
             sqlalchemy.text(
                 """
@@ -95,17 +106,23 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 FROM holds
                 WHERE active = TRUE AND book_id = :book_id
                 ORDER BY creation_date ASC
+                LIMIT :limit
                 """
             ),
-            {"book_id": book_id},
-        ).fetchone()
+            {"book_id": book_id, "limit": copies},
+        )
 
-        if hold_check is not None:
-            # holding_users = []
-            # for row in hold_check:
-            #    holding_users.append(row.patron_id)
+        # hold priority goes in order of their creation:
+        # but if there are two returned copies, the second holding user can still check one out before the first.
+        # (one copy will still be left for the first priority holding user)
+        # the amount of open copies determines how many holding users in the queue can check out
+        # (this is why it counts the amount of open copies.)
 
-            if request.patron_id != hold_check.patron_id:
+        if hold_check.rowcount != 0:
+            holding_users = []
+            for row in hold_check:
+                holding_users.append(row.patron_id)
+            if request.patron_id not in holding_users:
                 print(" --- Checkout failed bc hold priority")
                 raise HTTPException(
                     status_code=403,
@@ -134,14 +151,14 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 RETURNING id, due_date
                 """
             ),
-            {"patron_id": request.patron_id, "copy_id": available_copy.id},
+            {"patron_id": request.patron_id, "copy_id": loan},
         ).one()
 
     return CheckoutResponse(
         success=True,
         checkout_id=checkout.id,
         due_date=str(checkout.due_date),
-        copy_id=available_copy.id,
+        copy_id=loan,
     )
 
 
