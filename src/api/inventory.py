@@ -121,7 +121,7 @@ def add_book_copy(copy: BookCopyRequest):
 @router.post(
     "/remove_book/{book_id}",
     tags=["inventory"],
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_201_CREATED,
 )
 def remove_book(book_id: int):
     """
@@ -171,7 +171,7 @@ def remove_book(book_id: int):
 @router.post(
     "/remove_copy/{book_copy_id}",
     tags=["inventory"],
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_201_CREATED,
 )
 def remove_book_copy(book_copy_id: int):
     """
@@ -200,13 +200,16 @@ def remove_book_copy(book_copy_id: int):
                 """
                 UPDATE book_inventory
                 SET active = FALSE
-                WHERE id = :book_copy_id
+                WHERE id = :book_copy_id AND active = TRUE
                 RETURNING id
             """
             ),
             [{"book_copy_id": book_copy_id}],
         )
         if update.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Book copy not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Book copy not found, or book copy is already inactive",
+            )
 
     return {"removed_copy_id": book_copy_id, "success": True}
