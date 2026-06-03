@@ -64,17 +64,17 @@ def request_acquisition(request: AcquisitionRequest):
             sqlalchemy.text(
                 """
                 SELECT id FROM book_log
-                WHERE title = :title AND author = :author
+                WHERE title = :title
                 LIMIT 1 
                 """
             ),
-            {"title": request.title, "author": request.author},
+            {"title": request.title},
         ).fetchone()
 
         if existing_book:
             raise HTTPException(
                 status_code=409,
-                detail=f"'{request.title}' by {request.author} already exists in the catalog. You can check it out or place a hold if it's currently unavailable.",
+                detail=f"'{request.title}' already exists in the catalog. You can check it out or place a hold if it's currently unavailable.",
             )
 
         # 3 checks if same patron already requested this title
