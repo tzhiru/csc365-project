@@ -165,6 +165,8 @@ def remove_book(book_id: int):
                 status_code=404, detail="No copies of the book were found"
             )
 
+    return {"removed_book_id": book_id, "success": True}
+
 
 @router.post(
     "/remove_copy/{book_copy_id}",
@@ -175,8 +177,24 @@ def remove_book_copy(book_copy_id: int):
     """
     Marks book copy from inventory as inactive/unavaliable.
     """
-    print(f"remove book copy. id: {book_copy_id}")
     with db.engine.begin() as connection:
+        checked = connection.execute(
+            sqlalchemy.text(
+                """
+                    SELECT 1
+                    FROM checkouts
+                    WHERE returned_at IS NULL AND book_inventory_id = :book_copy_id
+                """
+            ),
+            [{"book_copy_id": book_copy_id}],
+        ).fetchone()
+
+        if checked:
+            raise HTTPException(
+                status_code=404, detail="This copy is currently checked out."
+            )
+
+        print(f"remove book copy. id: {book_copy_id}")
         update = connection.execute(
             sqlalchemy.text(
                 """
@@ -190,3 +208,5 @@ def remove_book_copy(book_copy_id: int):
         )
         if update.rowcount == 0:
             raise HTTPException(status_code=404, detail="Book copy not found")
+
+    return {"removed_copy_id": book_copy_id, "success": True}
