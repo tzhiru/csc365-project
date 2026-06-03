@@ -269,7 +269,7 @@ Response: This feedback was addressed. We have standardized to patron_id across 
 
 10. Checkout and return are asymmetric — checkout uses book_id and the server picks a copy, but return requires knowing the specific book_copy_id.
 
-Response: This feedback was not addressed. The return endpoint actually accepts a book_id and patron_id and finds the active checkout automatically it does not require the patron to know the copy ID.
+Response: The copy_id is given to the user when they check out a book. The system is based off a real library system-- a user has a specific copy of the book, and when the copy is placed in the returns pile, it is processed by that specific copy_id.
 
 11. Routes are split across prefixes in a hard-to-predict way.
 
@@ -277,7 +277,7 @@ Response: This was not addressed. Changing prefixes and routing structures acros
 
 12. List endpoints have no pagination.
 
-Response: This feedback was partially addressed. Pagination has been implemented for GET /accounts/. 
+Pagination has been implemented.
 
 13. The search endpoint only does exact matching and cannot combine filters or search by category.
 
