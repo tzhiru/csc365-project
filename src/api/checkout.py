@@ -63,7 +63,6 @@ def checkout_book(book_id: int, request: CheckoutRequest):
                 detail="Patron has reached the maximum limit of 10 active checkouts.",
             )
 
-
         # find an available copy of the book
         available_copy = connection.execute(
             sqlalchemy.text(

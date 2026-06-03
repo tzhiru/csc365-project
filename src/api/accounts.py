@@ -61,7 +61,9 @@ def post_new_account(acct: PatronAccountInfo):
             {"phone": acct.phone_number},
         ).scalar()
         if phone_exists:
-            raise HTTPException(status_code=400, detail="Phone number is already registered.")
+            raise HTTPException(
+                status_code=400, detail="Phone number is already registered."
+            )
 
         acct_connect = connection.execute(
             sqlalchemy.text(
