@@ -10,15 +10,14 @@ This script creates:
 - 10,000 publishers
 
 This ended up being more than a million (whoops). This ratio seemed realistic enough, as there should be much more book types than patrons who have an account, and in a library there is usually multiple copies of different books.
-## Performance results  
-Time in ms each endpoint took to execute via curl.  
-  
+## Performance results    
 **GET `/accounts/`** 26.302 ms  
 **POST `/accounts/create/`** 12.399 ms  
 **GET `/accounts/{account_id}`** 10.861 ms  
 **GET `/accounts/{account_id}/checkouts`** 38.865 ms  
   
 **GET `/catalog/search/`** with one search attribute: 300.364 ms (Longest)  
+**GET `/catalog/{book_id}/`** 18.684 ms  
   
 **POST `/wishlist/request/`** 23.308 ms  
 **GET `/wishlist/`**  33.760 ms  
@@ -32,8 +31,8 @@ Time in ms each endpoint took to execute via curl.
 **POST `/holds/{book_id}/`** 57.132 ms  
 **GET `/holds/view_holds/{book_id}`** 31.843 ms  
 
-**POST `/inventory/add_book/{book_id}`** 79.036 ms  
-**POST `/inventory/add_book_copy/{book_copy_id}`** 33.107 ms  
+**POST `/inventory/add_book/`** 79.036 ms  
+**POST `/inventory/add_book_copy/`** 33.107 ms  
 **POST `/inventory/remove_book/{book_id}`** 91.445 ms  
 **POST `/inventory/remove_book_copy/{book_copy_id}`** 41.792 ms  
 ## Performance tuning
