@@ -122,7 +122,7 @@ def get_book_details(book_id: int):
         ).fetchone()
 
         if not book:
-            raise HTTPException(status_code=404, detail="Book not found")
+            raise HTTPException(status_code=404, detail="Book not found or is not available at this location")
 
         return CatalogItem(
             book_id=book.id,

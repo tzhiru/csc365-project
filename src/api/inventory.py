@@ -50,9 +50,13 @@ def add_book(book: BookRequest):
         book_id = connection.execute(
             sqlalchemy.text(
                 """
-                INSERT INTO books (title, author_id, publisher_id, date_published)
-                VALUES (:title, :author_id, :publisher_id, :date_published)
-                RETURNING id
+                WITH insert_book AS (
+                    INSERT INTO books (title, author_id, publisher_id, date_published)
+                    VALUES (:title, :author_id, :publisher_id, :date_published)
+                    ON CONFLICT DO NOTHING
+                    RETURNING id
+                )
+                SELECT COALESCE(sum(id), 0) FROM insert_book
                 """
             ),
             {
@@ -62,6 +66,11 @@ def add_book(book: BookRequest):
                 "date_published": book.date_published,
             },
         ).scalar_one()
+
+        if book_id == 0:
+            raise HTTPException(
+                status_code=404, detail="Exact book type already exists."
+            )
 
         return {"book_id": book_id, "success": True}
 
